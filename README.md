@@ -15,7 +15,7 @@ If you are developing a production application, we recommend using TypeScript wi
 Nota:
 Se necesita instalar...
 
-npm install Bootstrap
+npm install bootstrap
 npm install @fortawesome/fontawesome-free
 npm install react-bootstrap bootstrap react-icons
 npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
