@@ -91,7 +91,7 @@ function Register() {
               <Col sm={8}>
                 <Form.Control
                   type="text"
-                  placeholder="usuario123"
+                  // placeholder="usuario"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -107,7 +107,7 @@ function Register() {
             <Col sm={8}>
               <Form.Control
                 type="password"
-                placeholder="••••••••"
+                // placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

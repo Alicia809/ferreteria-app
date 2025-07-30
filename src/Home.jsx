@@ -17,11 +17,12 @@ export default function Home() {
   };
 
   return (
-    <div className="d-flex vh-100 overflow-hidden">
+    <div className="d-flex flex-column vh-100 overflow-hidden">
+      {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
           <a className="navbar-brand d-flex align-items-center gap-2">
-            <img src="/Logo.png" alt="Logo" height="60"/>
+            <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
           </a>
           <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
@@ -40,7 +41,7 @@ export default function Home() {
                 </li>
                 <li className="nav-item">
                   <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACION
+                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
                   </Link>
                 </li>
                 <li className="nav-item">
@@ -54,9 +55,8 @@ export default function Home() {
                   </Link>
                 </li>
               </ul>
-              <div className="offcanvas-body"> </div>
               <div>
-                <button type="button" className="btn btn-outline-danger" onClick={handleLogout}>
+                <button type="button" className="btn btn-outline-danger mt-3" onClick={handleLogout}>
                   Cerrar Sesión
                 </button>
               </div>
@@ -64,6 +64,11 @@ export default function Home() {
           </div>
         </div>
       </nav>
+
+      {/* CONTENIDO CENTRADO */}
+      <div className="flex-grow-1 d-flex justify-content-center align-items-center" style={{ marginTop: '80px' }}>
+        <h1 className="text-center">Bienvenido al Sistema de Comercial Mateo</h1>
+      </div>
     </div>
   );
 }

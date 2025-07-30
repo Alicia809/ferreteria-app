@@ -65,7 +65,7 @@ const CrudSeguridad = () => {
                 </li>
                 <li className="nav-item">
                   <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACION
+                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
                   </Link>
                 </li>
                 <li className="nav-item">

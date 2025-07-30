@@ -127,7 +127,7 @@ function EditLocalUser() {
           {userLoaded && (
             <form onSubmit={handleSave}>
               <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Nuevo nombre de usuario:</label>
+                <label className="col-sm-5 col-form-label">Nombre de usuario:</label>
                 <div className="col-sm-7">
                   <input
                     type="text"
