@@ -10,6 +10,9 @@ import Login from './modules/seguridad/Login';
 import Register from './modules/seguridad/Register';
 import Eliminar from './modules/seguridad/Eliminar';
 import Editar from './modules/seguridad/Editar';
+import NuevoProducto from './modules/inventario/NuevoProducto';
+import ActualizacionManual from './modules/inventario/ActualizacionManual';
+import ReabastecerStock from './modules/inventario/ReabastecerStock';
 import NotFound from './NotFound';
 import Home from './Home';
 
@@ -54,6 +57,27 @@ function App() {
               <Productos />
             </RutaProtegida>
           } />
+          
+
+
+          <Route path="/inventario/nuevo" element={
+            <RutaProtegida>
+              <NuevoProducto />
+            </RutaProtegida>
+          } />
+          <Route path="/inventario/actualizacion" element={
+            <RutaProtegida>
+              <ActualizacionManual />
+            </RutaProtegida>
+          } />
+          <Route path="/inventario/reabastecer" element={
+            <RutaProtegida>
+              <ReabastecerStock />
+            </RutaProtegida>
+          } />
+
+
+
           <Route path="/facturacion" element={
             <RutaProtegida>
               <Facturacion />

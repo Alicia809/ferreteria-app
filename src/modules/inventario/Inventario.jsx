@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../../App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+
 import { useAuth } from '../../components/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 export default function Inventario() {
   const { logout } = useAuth();
@@ -17,20 +17,37 @@ export default function Inventario() {
   };
 
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden">
-      {/* NAVBAR */}
+    <div className="d-flex flex-column vh-100 overflow-auto">
+      {/* NAVBAR con menú */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <a className="navbar-brand d-flex align-items-center gap-2">
+          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </a>
-          <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+          </Link>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasNavbar"
+            aria-controls="offcanvasNavbar"
+            aria-label="Toggle navigation"
+          >
             <span className="navbar-toggler-icon"></span>
           </button>
-          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+          <div
+            className="offcanvas offcanvas-end custom-offcanvas"
+            tabIndex="-1"
+            id="offcanvasNavbar"
+            aria-labelledby="offcanvasNavbarLabel"
+          >
             <div className="offcanvas-header">
-              <button type="button" className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              <button
+                type="button"
+                className="btn-close custom-close-btn"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"
+              ></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
@@ -56,7 +73,11 @@ export default function Inventario() {
                 </li>
               </ul>
               <div>
-                <button type="button" className="btn btn-outline-danger mt-3" onClick={handleLogout}>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger mt-3"
+                  onClick={handleLogout}
+                >
                   Cerrar Sesión
                 </button>
               </div>
@@ -65,9 +86,54 @@ export default function Inventario() {
         </div>
       </nav>
 
-      {/* CONTENIDO CENTRADO */}
-      <div className="flex-grow-1 d-flex justify-content-center align-items-center" style={{ marginTop: '80px' }}>
-        <h1 className="text-center">Bienvenido al Inventario de Comercial Mateo</h1>
+      {/* CONTENIDO PRINCIPAL */}
+      <div className="container mt-5 pt-5" style={{ paddingTop: '120px' }}>
+        <h2 className="text-center mb-5">Bienvenido a Inventario de Comercial Mateo</h2>
+
+        {/* TARJETAS */}
+        <div className="row justify-content-center g-4">
+          <div
+            className="col-md-4"
+            onClick={() => navigate('/inventario/nuevo')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card text-center shadow-sm h-100">
+              <div className="card-body">
+                <i className="fas fa-plus fa-2x text-primary mb-3"></i>
+                <h5 className="card-title">Registrar nuevo producto</h5>
+                <p className="card-text">Agrega productos que aún no existen en el inventario.</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="col-md-4"
+            onClick={() => navigate('/inventario/actualizacion')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card text-center shadow-sm h-100">
+              <div className="card-body">
+                <i className="fas fa-edit fa-2x text-warning mb-3"></i>
+                <h5 className="card-title">Actualización manual</h5>
+                <p className="card-text">Modifica cantidades específicas del inventario.</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="col-md-4"
+            onClick={() => navigate('/inventario/reabastecer')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card text-center shadow-sm h-100">
+              <div className="card-body">
+                <i className="fas fa-box-open fa-2x text-success mb-3"></i>
+                <h5 className="card-title">Reabastecer stock</h5>
+                <p className="card-text">Agrega unidades a productos existentes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
