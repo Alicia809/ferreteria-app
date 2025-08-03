@@ -8,6 +8,7 @@ import { useAuth } from '../../components/AuthContext';
 function Mostrar() {
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState('');
+  const [busqueda, setBusqueda] = useState('');
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -47,6 +48,11 @@ function Mostrar() {
         return 'secondary';
     }
   };
+
+  const usuariosFiltrados = usuarios.filter(user =>
+    (user.username || user.id).toLowerCase().includes(busqueda.toLowerCase()) ||
+    (user.rol || '').toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   return (
     <>
@@ -127,26 +133,41 @@ function Mostrar() {
       <div className="container min-vh-100" style={{ paddingTop: '120px' }}>
         <h3 className="text-center mb-4 text-primary fw-bold">Usuarios Registrados</h3>
 
+        {/* Buscador */}
+        <div className="input-group mb-4">
+          <span className="input-group-text" id="buscar-addon">
+            <i className="fas fa-search"></i>
+          </span>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Buscar por nombre, ID o rol"
+            aria-label="Buscar"
+            aria-describedby="buscar-addon"
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
+        </div>
+
         {error && <div className="alert alert-danger">{error}</div>}
 
-        {!error && usuarios.length === 0 && (
-          <p>No hay usuarios registrados.</p>
+        {!error && usuariosFiltrados.length === 0 && (
+          <p>No se encontraron usuarios.</p>
         )}
 
-        <div className="row">
-          {usuarios.map(user => (
-            <div key={user.id} className="col-12 col-md-6 col-lg-4 mb-4">
-              <div className="card shadow-sm h-100">
-                <div className="card-body d-flex flex-column justify-content-between">
-                  <div>
-                    <h5 className="card-title">{user.username || user.id}</h5>
-                    <p className="card-text">
-                      <span className={`badge bg-${badgeColor(user.rol)}`}>
-                        {user.rol.charAt(0).toUpperCase() + user.rol.slice(1)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
+        {/* Tarjetas de usuarios */}
+        <div className="d-flex flex-wrap gap-3 justify-content-center">
+          {usuariosFiltrados.map(user => (
+            <div key={user.id} className="card shadow-sm p-3" style={{ display: 'inline-block', width: 'auto', minWidth: '200px' }}>
+              <div className="card-body">
+                <h5 className="card-title text-truncate" style={{ maxWidth: '300px' }}>
+                  {user.username || user.id}
+                </h5>
+                <p className="card-text">
+                  <span className={`badge bg-${badgeColor(user.rol)}`}>
+                    {user.rol?.charAt(0).toUpperCase() + user.rol?.slice(1)}
+                  </span>
+                </p>
               </div>
             </div>
           ))}

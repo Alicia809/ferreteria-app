@@ -7,64 +7,61 @@ import { Modal, Button } from 'react-bootstrap';
 import { useAuth } from '../../components/AuthContext';
 
 function EliminarProveedor() {
-  const [username, setUsername] = useState('');
-  const [userExists, setUserExists] = useState(false);
+  const [rtn, setRTN] = useState('');
+  const [proveedorNombre, setProveedorNombre] = useState('');
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [mensaje, setMensaje] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  const { logout } = useAuth();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  const handleLoadUser = async (e) => {
+  const handleVerificarProveedor = async (e) => {
     e.preventDefault();
     setError('');
-    setMessage('');
-    setUserExists(false);
+    setMensaje('');
+    setProveedorNombre('');
+    setShowModal(false);
 
-    if (!username.trim()) {
-      setError('Por favor ingresa el nombre de usuario.');
+    const rtnRegex = /^\d{14}$/;
+    if (!rtnRegex.test(rtn.trim())) {
+      setError('El RTN debe tener exactamente 14 dígitos numéricos.');
       return;
     }
 
     try {
-      const userRef = doc(db, 'usuarios', username);
-      const userSnap = await getDoc(userRef);
+      const docRef = doc(db, 'proveedores', rtn.trim());
+      const docSnap = await getDoc(docRef);
 
-      if (!userSnap.exists()) {
-        setError('Usuario no encontrado.');
+      if (!docSnap.exists()) {
+        setError('Proveedor no encontrado con ese RTN.');
         return;
       }
 
-      const userData = userSnap.data();
-
-      if (userData.rol === 'admin') {
-        setError('No se puede eliminar un usuario administrador.');
-        return;
-      }
-
-      // Si pasa validaciones, mostrar modal directamente
+      const data = docSnap.data();
+      setProveedorNombre(data.nombre || '');
       setShowModal(true);
     } catch (err) {
-      setError('Error verificando usuario: ' + err.message);
+      setError('Error al verificar proveedor: ' + err.message);
     }
   };
 
-
-  const handleDelete = async () => {
+  const handleEliminarProveedor = async () => {
+    setError('');
+    setMensaje('');
     try {
-      await deleteDoc(doc(db, 'usuarios', username));
-      setMessage(`Usuario '${username}' eliminado correctamente.`);
-      setUsername('');
-      setUserExists(false);
+      await deleteDoc(doc(db, 'proveedores', rtn.trim()));
+      setMensaje(`Proveedor '${proveedorNombre}' eliminado correctamente.`);
+      setRTN('');
+      setProveedorNombre('');
       setShowModal(false);
     } catch (err) {
-      setError('Error eliminando usuario: ' + err.message);
+      setError('Error al eliminar proveedor: ' + err.message);
       setShowModal(false);
     }
   };
@@ -78,23 +75,62 @@ function EliminarProveedor() {
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
           </Link>
-          <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasNavbar"
+            aria-controls="offcanvasNavbar"
+          >
             <span className="navbar-toggler-icon"></span>
           </button>
-          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar">
+          <div
+            className="offcanvas offcanvas-end custom-offcanvas"
+            tabIndex="-1"
+            id="offcanvasNavbar"
+          >
             <div className="offcanvas-header">
-              <button className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              <button
+                className="btn-close custom-close-btn"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"
+              ></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item"><Link to="/reportes" className="nav-link menu-link"><i className="fas fa-chart-line me-2"></i> REPORTES</Link></li>
-                <li className="nav-item"><Link to="/facturacion" className="nav-link menu-link"><i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN</Link></li>
-                <li className="nav-item"><Link to="/inventario" className="nav-link menu-link"><i className="fas fa-boxes me-2"></i> INVENTARIO</Link></li>
-                <li className="nav-item"><Link to="/proveedores" className="nav-link menu-link"><i className="fas fa-truck me-2"></i> PROVEEDORES</Link></li>
-                <li className="nav-item"><Link to="/seguridad" className="nav-link menu-link"><i className="fas fa-user-shield me-2"></i> SEGURIDAD</Link></li>
+                <li className="nav-item">
+                  <Link to="/reportes" className="nav-link menu-link">
+                    <i className="fas fa-chart-line me-2"></i> REPORTES
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/facturacion" className="nav-link menu-link">
+                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/inventario" className="nav-link menu-link">
+                    <i className="fas fa-boxes me-2"></i> INVENTARIO
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/proveedores" className="nav-link menu-link">
+                    <i className="fas fa-truck me-2"></i> PROVEEDORES
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/seguridad" className="nav-link menu-link">
+                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
+                  </Link>
+                </li>
               </ul>
               <div>
-                <button className="btn btn-outline-danger mt-3" onClick={handleLogout}>Cerrar Sesión</button>
+                <button
+                  className="btn btn-outline-danger mt-3"
+                  onClick={handleLogout}
+                >
+                  Cerrar Sesión
+                </button>
               </div>
             </div>
           </div>
@@ -102,49 +138,57 @@ function EliminarProveedor() {
       </nav>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="container min-vh-100 d-flex justify-content-center align-items-center" style={{ paddingTop: '120px' }}>
+      <div
+        className="container min-vh-100 d-flex justify-content-center align-items-center"
+        style={{ paddingTop: '120px' }}
+      >
         <div className="card p-4 shadow-lg" style={{ width: '700px' }}>
-          <h4 className="text-center mb-4">Eliminar Usuario Local</h4>
+          <h4 className="text-center mb-4">Eliminar Proveedor</h4>
 
-          {!userExists && (
-            <form onSubmit={handleLoadUser}>
-              <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Nombre de usuario a eliminar:</label>
-                <div className="col-sm-7">
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </div>
+          <form onSubmit={handleVerificarProveedor}>
+            <div className="mb-3 row align-items-center">
+              <label className="col-sm-5 col-form-label">RTN del proveedor a eliminar:</label>
+              <div className="col-sm-7">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={rtn}
+                  onChange={(e) => setRTN(e.target.value)}
+                  placeholder="Ejemplo: 08011998123945"
+                  required
+                />
               </div>
-              <div className="d-flex justify-content-between mt-4">
-                <Link to="/seguridad" className="btn btn-secondary">Regresar</Link>
-                <button type="submit" className="btn btn-danger">Verificar usuario</button>
-              </div>
-            </form>
-          )}
+            </div>
+
+            <div className="d-flex justify-content-between mt-4">
+              <Link to="/proveedores" className="btn btn-secondary">
+                Regresar
+              </Link>
+              <button type="submit" className="btn btn-danger">
+                Verificar Proveedor
+              </button>
+            </div>
+          </form>
 
           {error && <div className="alert alert-danger mt-3">{error}</div>}
-          {message && <div className="alert alert-success mt-3">{message}</div>}
+          {mensaje && <div className="alert alert-success mt-3">{mensaje}</div>}
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMACIÓN */}
+      {/* MODAL CONFIRMACIÓN */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Confirmar eliminación</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          ¿Estás seguro que deseas eliminar al usuario <strong>{username}</strong>?
+          ¿Estás seguro que deseas eliminar al proveedor{' '}
+          <strong>{proveedorNombre}</strong> (RTN: {rtn})?
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancelar
           </Button>
-          <Button variant="danger" onClick={handleDelete}>
+          <Button variant="danger" onClick={handleEliminarProveedor}>
             Eliminar
           </Button>
         </Modal.Footer>

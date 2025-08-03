@@ -2,113 +2,127 @@ import React, { useState } from 'react';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Link, useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { isValidPhoneNumber } from 'libphonenumber-js';
+import { allCountries } from 'country-telephone-data';
 import { useAuth } from '../../components/AuthContext';
-//
-function EditLocalUser() {
-  const [currentUsername, setCurrentUsername] = useState('');
-  const [newUsername, setNewUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [rol, setRol] = useState('bodega');
-  const [userLoaded, setUserLoaded] = useState(false);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-  const { logout } = useAuth();
+function EditProveedor() {
+  const [rtnActual, setRtnActual] = useState('');
+  const [rtnNuevo, setRtnNuevo] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [pais, setPais] = useState('HN');
+  const [telefono, setTelefono] = useState('');
+  const [proveedorCargado, setProveedorCargado] = useState(false);
+  const [error, setError] = useState('');
+  const [mensaje, setMensaje] = useState('');
+
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const codigoPais = (() => {
+    const paisSeleccionado = allCountries.find((c) => c.iso2.toUpperCase() === pais);
+    return paisSeleccionado ? `+${paisSeleccionado.dialCode}` : '';
+  })();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  const handleLoadUser = async (e) => {
+  const cargarProveedor = async (e) => {
     e.preventDefault();
     setError('');
-    setMessage('');
-    setUserLoaded(false);
+    setMensaje('');
+    setProveedorCargado(false);
 
-    if (!currentUsername.trim()) {
-      setError('Por favor ingresa el nombre de usuario actual.');
+    if (!rtnActual.trim()) {
+      setError('Por favor ingresa el RTN del proveedor.');
       return;
     }
 
     try {
-      const userRef = doc(db, 'usuarios', currentUsername);
-      const userSnap = await getDoc(userRef);
+      const docRef = doc(db, 'proveedores', rtnActual);
+      const docSnap = await getDoc(docRef);
 
-      if (!userSnap.exists()) {
-        setError('Usuario no encontrado.');
+      if (!docSnap.exists()) {
+        setError('Proveedor no encontrado.');
         return;
       }
 
-      const userData = userSnap.data();
-
-      if (userData.rol === 'admin') {
-        setError('No se puede editar un usuario administrador.');
-        return;
-      }
-
-      setNewUsername(userData.username || currentUsername);
-      setPassword(userData.password || '');
-      setRol(userData.rol || 'bodega');
-      setUserLoaded(true);
+      const data = docSnap.data();
+      setRtnNuevo(data.rtn || rtnActual);
+      setNombre(data.nombre || '');
+      setCorreo(data.correo || '');
+      setDireccion(data.direccion || '');
+      setPais(data.pais || 'HN');
+      setTelefono(data.telefono ? data.telefono.replace(/^\+\d+/, '') : '');
+      setProveedorCargado(true);
     } catch (err) {
-      setError('Error cargando usuario: ' + err.message);
+      setError('Error cargando proveedor: ' + err.message);
     }
   };
 
-  const handleSave = async (e) => {
+  const guardarCambios = async (e) => {
     e.preventDefault();
     setError('');
-    setMessage('');
+    setMensaje('');
 
-    if (!newUsername.trim()) {
-      setError('El nuevo nombre de usuario no puede estar vacío.');
+    const rtnRegex = /^\d{14}$/;
+    if (!rtnRegex.test(rtnNuevo)) {
+      setError('El RTN debe tener exactamente 14 dígitos.');
       return;
     }
-    if (!password) {
-      setError('La contraseña no puede estar vacía.');
-      return;
-    }
-    if (!rol) {
-      setError('Debe seleccionar un rol.');
+
+    if (!isValidPhoneNumber(`${codigoPais}${telefono}`, pais)) {
+      setError('Número de teléfono inválido.');
       return;
     }
 
     try {
-      if (newUsername !== currentUsername) {
-        const newUserRef = doc(db, 'usuarios', newUsername);
-        const newUserSnap = await getDoc(newUserRef);
-        if (newUserSnap.exists()) {
-          setError('El nuevo nombre de usuario ya existe.');
+      const nuevoProveedor = {
+        nombre,
+        correo,
+        direccion,
+        telefono: `${codigoPais}${telefono}`,
+        rtn: rtnNuevo,
+        pais,
+      };
+
+      if (rtnActual !== rtnNuevo) {
+        const nuevoDocRef = doc(db, 'proveedores', rtnNuevo);
+        const docExistente = await getDoc(nuevoDocRef);
+        if (docExistente.exists()) {
+          setError('Ya existe un proveedor con ese RTN.');
           return;
         }
 
-        await setDoc(newUserRef, { username: newUsername, password, rol });
-        const oldUserRef = doc(db, 'usuarios', currentUsername);
-        await deleteDoc(oldUserRef);
-
-        setMessage('Usuario actualizado y renombrado correctamente.');
+        await setDoc(nuevoDocRef, nuevoProveedor);
+        await deleteDoc(doc(db, 'proveedores', rtnActual));
+        setMensaje('Proveedor actualizado y RTN cambiado correctamente.');
       } else {
-        const userRef = doc(db, 'usuarios', currentUsername);
-        await setDoc(userRef, { username: newUsername, password, rol });
-        setMessage('Usuario actualizado correctamente.');
+        await setDoc(doc(db, 'proveedores', rtnActual), nuevoProveedor);
+        setMensaje('Proveedor actualizado correctamente.');
       }
 
-      setCurrentUsername('');
-      setNewUsername('');
-      setPassword('');
-      setRol('bodega');
-      setUserLoaded(false);
+      setProveedorCargado(false);
+      setRtnActual('');
+      setRtnNuevo('');
+      setNombre('');
+      setCorreo('');
+      setDireccion('');
+      setPais('HN');
+      setTelefono('');
     } catch (err) {
-      setError('Error guardando usuario: ' + err.message);
+      setError('Error guardando proveedor: ' + err.message);
     }
   };
 
   return (
     <>
-      {/* NAVBAR */}
+      {/* Navbar */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
           <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
@@ -168,11 +182,7 @@ function EditLocalUser() {
                 </li>
               </ul>
               <div>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger mt-3"
-                  onClick={handleLogout}
-                >
+                <button type="button" className="btn btn-outline-danger mt-3">
                   Cerrar Sesión
                 </button>
               </div>
@@ -182,87 +192,133 @@ function EditLocalUser() {
       </nav>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="container min-vh-100 d-flex justify-content-center align-items-center" style={{ paddingTop: '120px' }}>
+      <div className="container min-vh-100 d-flex justify-content-center align-items-center" >
         <div className="card p-4 shadow-lg" style={{ width: '700px' }}>
-          <h4 className="text-center mb-4">Editar Usuario Local</h4>
+          <h4 className="text-center mb-4">Editar Proveedor</h4>
 
-          {!userLoaded && (
-            <form onSubmit={handleLoadUser}>
-              <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Nombre de usuario actual:</label>
-                <div className="col-sm-7">
+          {error && <div className="alert alert-danger">{error}</div>}
+          {mensaje && <div className="alert alert-success">{mensaje}</div>}
+
+          {!proveedorCargado && (
+          <form
+            onSubmit={cargarProveedor}
+            className="w-100"
+            style={{ maxWidth: '900px', margin: '0 auto' }}
+          >
+            <div className="mb-4 row align-items-center">
+              <label
+                className="col-md-4 col-form-label fw-semibold"
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                RTN del proveedor:
+              </label>
+              <div className="col-md-8">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={rtnActual}
+                  onChange={(e) => setRtnActual(e.target.value)}
+                  required
+                  style={{ minWidth: '0' }}
+                />
+              </div>
+            </div>
+            <div className="d-flex justify-content-between mt-3">
+              <Link to="/proveedores" className="btn btn-secondary">
+                Regresar
+              </Link>
+              <button type="submit" className="btn btn-primary">
+                Cargar proveedor
+              </button>
+            </div>
+          </form>
+        )}
+
+
+          {proveedorCargado && (
+            <form onSubmit={guardarCambios}>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Nombre</label>
                   <input
                     type="text"
                     className="form-control"
-                    value={currentUsername}
-                    onChange={(e) => setCurrentUsername(e.target.value)}
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
                     required
                   />
                 </div>
-              </div>
-              <div className="d-flex justify-content-between mt-4">
-                <Link to="/seguridad" className="btn btn-secondary">Regresar</Link>
-                <button type="submit" className="btn btn-primary">Cargar usuario</button>
-              </div>
-            </form>
-          )}
 
-          {userLoaded && (
-            <form onSubmit={handleSave}>
-              <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Nombre de usuario:</label>
-                <div className="col-sm-7">
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Correo</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={correo}
+                    onChange={(e) => setCorreo(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="col-md-12">
+                  <label className="form-label fw-semibold">Dirección</label>
+                  <textarea
+                    className="form-control"
+                    rows="2"
+                    value={direccion}
+                    onChange={(e) => setDireccion(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">RTN</label>
                   <input
                     type="text"
                     className="form-control"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
+                    value={rtnNuevo}
+                    onChange={(e) => setRtnNuevo(e.target.value)}
                     required
                   />
                 </div>
-              </div>
 
-              <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Contraseña:</label>
-                <div className="col-sm-7">
-                  <input
-                    type="password"
-                    className="form-control"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Rol:</label>
-                <div className="col-sm-7">
+                <div className="col-md-3">
+                  <label className="form-label fw-semibold">País</label>
                   <select
                     className="form-select"
-                    value={rol}
-                    onChange={(e) => setRol(e.target.value)}
-                    required
+                    value={pais}
+                    onChange={(e) => setPais(e.target.value)}
                   >
-                    <option value="bodega">Encargado de bodega</option>
-                    <option value="ventas">Encargado de ventas</option>
+                    {allCountries.map(({ name, iso2, dialCode }) => (
+                      <option key={iso2} value={iso2.toUpperCase()}>
+                        {name} (+{dialCode})
+                      </option>
+                    ))}
                   </select>
+                </div>
+
+                <div className="col-md-3">
+                  <label className="form-label fw-semibold">Teléfono</label>
+                  <input
+                    type="tel"
+                    className="form-control"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
 
               <div className="d-flex justify-content-between mt-4">
-                <Link to="/seguridad" className="btn btn-secondary">Regresar</Link>
-                <button type="submit" className="btn btn-success">Guardar cambios</button>
+                <Link to="/proveedores" className="btn btn-secondary">Regresar</Link>
+                <button type="submit" className="btn btn-success">Guardar Cambios</button>
               </div>
             </form>
           )}
-
-          {error && <div className="alert alert-danger mt-3">{error}</div>}
-          {message && <div className="alert alert-success mt-3">{message}</div>}
         </div>
       </div>
     </>
   );
 }
 
-export default EditLocalUser;
+export default EditProveedor;
