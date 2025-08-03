@@ -13,25 +13,25 @@ const Proveedores = () => {
       icon: <FaUserPlus size={40} color="#0d6efd" />,
       title: 'Nuevo Proveedor',
       description: 'Registra nuevos proveedores.',
-      route: '/register',
+      route: '/registerProveedor',
     },
     {
       icon: <FaUserEdit size={40} color="#0d6efd" />,
       title: 'Editar Proveedor',
       description: 'Modifica la información de provedores existentes.',
-      route: '/editar',
+      route: '/editarProveedor',
     },
     {
       icon: <FaUserTimes size={40} color="#0d6efd" />,
       title: 'Eliminar Proveedor',
       description: 'Elimina proveedores.',
-      route: '/eliminar',
+      route: '/eliminarProveedor',
     },
     {
       icon: <FaUsers size={40} color="#0d6efd" />,
       title: 'Ver Proveedores',
       description: 'Ver la lista de proveedores actuales.',
-      route: '/mostrar',
+      route: '/mostrarProveedor',
     },
   ];
 

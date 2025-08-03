@@ -156,7 +156,7 @@ export default function Inventario() {
 
           <div
             className="col-md-4"
-            onClick={() => navigate('/catalogo')}
+            onClick={() => navigate('/productos')}
             style={{ cursor: 'pointer' }}
           >
             <div className="card text-center shadow-sm h-100">

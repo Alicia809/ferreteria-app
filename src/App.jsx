@@ -12,6 +12,10 @@ import Register from './modules/seguridad/Register';
 import Eliminar from './modules/seguridad/Eliminar';
 import Editar from './modules/seguridad/Editar';
 import Mostrar from './modules/seguridad/Mostrar';
+import RegisterProveedor from './modules/proveedor/RegisterProveedor';
+import EliminarProveedor from './modules/proveedor/EliminarProveedor';
+import EditarProveedor from './modules/proveedor/EditarProveedor';
+import MostrarProveedor from './modules/proveedor/MostrarProveedor';
 import NuevoProducto from './modules/inventario/NuevoProducto';
 import ActualizacionManual from './modules/inventario/ActualizacionManual';
 import ReabastecerStock from './modules/inventario/ReabastecerStock';
@@ -52,6 +56,26 @@ function App() {
           <Route path="/mostrar" element={
             <RutaProtegida>
               <Mostrar />
+            </RutaProtegida>
+          } />
+          <Route path="/registerProveedor" element={
+            <RutaProtegida>
+              <RegisterProveedor />
+            </RutaProtegida>
+          } />
+          <Route path="/eliminarProveedor" element={
+            <RutaProtegida>
+              <EliminarProveedor />
+            </RutaProtegida>
+          } />
+          <Route path="/editarProveedor" element={
+            <RutaProtegida>
+              <EditarProveedor />
+            </RutaProtegida>
+          } />
+          <Route path="/mostrarProveedor" element={
+            <RutaProtegida>
+              <MostrarProveedor />
             </RutaProtegida>
           } />
           <Route path="/inventario" element={

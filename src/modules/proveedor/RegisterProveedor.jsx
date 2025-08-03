@@ -1,215 +1,190 @@
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../../firebase';
+import { db } from '../../firebase';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-  Container,
-  Form,
-  Button,
-  Card,
-  Row,
-  Col,
-  Alert
-} from 'react-bootstrap';
-import { FaArrowLeft } from 'react-icons/fa';
 import { useAuth } from '../../components/AuthContext';
+import { isValidPhoneNumber } from 'libphonenumber-js';
+import { allCountries } from 'country-telephone-data';
+import { FaArrowLeft } from 'react-icons/fa';
 
 function RegisterProveedor() {
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [rol, setRol] = useState('bodega');
+  const [nombre, setNombre] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [rtn, setRTN] = useState('');
+  const [pais, setPais] = useState('HN');
+  const [telefono, setTelefono] = useState('');
   const [error, setError] = useState('');
+  const [mensajeExito, setMensajeExito] = useState('');
   const navigate = useNavigate();
-
   const { logout } = useAuth();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const limpiarFormulario = () => {
+    setNombre('');
+    setCorreo('');
+    setDireccion('');
+    setRTN('');
+    setPais('HN');
+    setTelefono('');
+    setError('');
   };
+
+  const paisSeleccionado = allCountries.find(
+    (c) => c.iso2.toUpperCase() === pais
+  );
+
+  const codigoPais = paisSeleccionado ? `+${paisSeleccionado.dialCode}` : '';
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
+    setMensajeExito('');
+
+    const rtnRegex = /^\d{14}$/;
+    if (!rtnRegex.test(rtn)) {
+      setError('El RTN debe tener exactamente 14 dígitos numéricos.');
+      return;
+    }
+
+    if (!isValidPhoneNumber(`${codigoPais}${telefono}`, pais)) {
+      setError('Número de teléfono inválido para el país seleccionado.');
+      return;
+    }
 
     try {
-      if (rol === 'admin') {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, 'usuarios', cred.user.uid), {
-          email,
-          rol
-        });
-      } else {
-        const newUserRef = doc(db, 'usuarios', username);
-        await setDoc(newUserRef, {
-          username,
-          password,
-          rol
-        });
-      }
+      const docRef = doc(db, 'proveedores', rtn);
+      await setDoc(docRef, {
+        nombre,
+        correo,
+        direccion,
+        telefono: `${codigoPais}${telefono}`,
+        rtn,
+        pais,
+      });
 
-      navigate('/seguridad'); // Volver al menú de seguridad
+      setMensajeExito('Proveedor registrado con éxito');
+      limpiarFormulario();
     } catch (err) {
-      setError(err.message);
+      setError('Error al registrar proveedor: ' + err.message);
     }
   };
 
   return (
     <>
-      {/* NAVBAR */}
+      {/* Navbar */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
           <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
           </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div
-            className="offcanvas offcanvas-end custom-offcanvas"
-            tabIndex="-1"
-            id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
-          >
-            <div className="offcanvas-header">
-              <button
-                type="button"
-                className="btn-close custom-close-btn"
-                data-bs-dismiss="offcanvas"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div className="offcanvas-body">
-              <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
-              </ul>
-              <div>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger mt-3"
-                  onClick={handleLogout}
-                >
-                  Cerrar Sesión
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </nav>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', paddingTop: '120px' }}>
-        <Card className="p-4 shadow-sm w-100" style={{ maxWidth: '700px' }}>
-          <h3 className="text-center mb-4">Registrar Usuario</h3>
+      {/* Contenedor principal */}
+      <div className="container" style={{ paddingTop: '100px', maxWidth: '800px' }}>
+        <div
+          className="card shadow-lg p-4"
+          style={{ backgroundColor: 'white', borderRadius: '8px' }}
+        >
+          <h4 className="text-primary mb-4 fw-bold text-center">
+            <i className="bi bi-truck me-2"></i>Registrar Proveedor
+          </h4>
 
-          {error && <Alert variant="danger">{error}</Alert>}
+          {error && <div className="alert alert-danger">{error}</div>}
+          {mensajeExito && <div className="alert alert-success">{mensajeExito}</div>}
 
-          <Form onSubmit={handleRegister}>
-            <Form.Group as={Row} className="mb-3 align-items-center" controlId="rol">
-              <Form.Label column sm={4} className="text-end mb-0">
-                Rol
-              </Form.Label>
-              <Col sm={8}>
-                <Form.Select value={rol} onChange={(e) => setRol(e.target.value)}>
-                  <option value="admin">Administrador general</option>
-                  <option value="bodega">Encargado de bodega</option>
-                  <option value="ventas">Encargado de ventas</option>
-                </Form.Select>
-              </Col>
-            </Form.Group>
-
-            {rol === 'admin' ? (
-              <Form.Group as={Row} className="mb-3 align-items-center" controlId="email">
-                <Form.Label column sm={4} className="text-end mb-0">
-                  Correo Electrónico
-                </Form.Label>
-                <Col sm={8}>
-                  <Form.Control
-                    type="email"
-                    placeholder="correo@ejemplo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </Col>
-              </Form.Group>
-            ) : (
-              <Form.Group as={Row} className="mb-3 align-items-center" controlId="username">
-                <Form.Label column sm={4} className="text-end mb-0">
-                  Nombre de Usuario
-                </Form.Label>
-                <Col sm={8}>
-                  <Form.Control
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </Col>
-              </Form.Group>
-            )}
-
-            <Form.Group as={Row} className="mb-4 align-items-center" controlId="password">
-              <Form.Label column sm={4} className="text-end mb-0">
-                Contraseña
-              </Form.Label>
-              <Col sm={8}>
-                <Form.Control
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+          <form onSubmit={handleRegister}>
+            <div className="row g-3">
+              {/* Campos del formulario */}
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Nombre</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
                   required
                 />
-              </Col>
-            </Form.Group>
+              </div>
 
-            <Row>
-              <Col sm={{ span: 8, offset: 4 }} className="d-flex justify-content-between">
-                <Button variant="secondary" onClick={() => navigate('/seguridad')}>
-                  <FaArrowLeft className="me-2" />
-                  Regresar
-                </Button>
-                <Button variant="primary" type="submit">
-                  Registrar
-                </Button>
-              </Col>
-            </Row>
-          </Form>
-        </Card>
-      </Container>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Correo</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="col-md-12">
+                <label className="form-label fw-semibold">Dirección</label>
+                <textarea
+                  className="form-control"
+                  rows="2"
+                  value={direccion}
+                  onChange={(e) => setDireccion(e.target.value)}
+                  required
+                ></textarea>
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">RTN</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={rtn}
+                  onChange={(e) => setRTN(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="col-md-3">
+                <label className="form-label fw-semibold">País</label>
+                <select
+                  className="form-select"
+                  value={pais}
+                  onChange={(e) => setPais(e.target.value)}
+                >
+                  {allCountries.map(({ name, iso2, dialCode }) => (
+                    <option key={iso2} value={iso2.toUpperCase()}>
+                      {name} (+{dialCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-3">
+                <label className="form-label fw-semibold">Teléfono</label>
+                <input
+                  type="tel"
+                  className="form-control"
+                  placeholder="Número"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="d-flex justify-content-between mt-4">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => navigate('/proveedores')}
+              >
+                <FaArrowLeft className="me-2" />
+                Regresar
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Registrar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </>
   );
 }
