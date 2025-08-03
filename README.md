@@ -22,5 +22,6 @@ npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
 npm install react-bootstrap bootstrap
 npm install libphonenumber-js
 npm install country-telephone-data
+npm install react-input-mask
 
 
