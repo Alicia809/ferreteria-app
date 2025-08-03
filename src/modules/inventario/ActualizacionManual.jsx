@@ -128,6 +128,11 @@ export default function ActualizacionManual() {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link to="/proveedores" className="nav-link menu-link">
+                    <i className="fas fa-truck me-2"></i> PROVEEDORES
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link to="/seguridad" className="nav-link menu-link">
                     <i className="fas fa-user-shield me-2"></i> SEGURIDAD
                   </Link>
@@ -149,13 +154,12 @@ export default function ActualizacionManual() {
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="container py-5" style={{ paddingTop: '90px' }}>
-        <h2 className="text-center mb-4 text-primary fw-bold">
-          <i className="bi bi-pencil-square me-2"></i> Actualización Manual de Inventario
-        </h2>
-
         {/* TARJETAS - OPCIONES */}
         {!opcion && (
           <>
+            <h2 className="text-center mb-4 text-primary fw-bold">
+              <i className="bi bi-pencil-square me-2"></i> Actualización Manual de Inventario
+            </h2>
             <div className="row justify-content-center gap-4">
               <div
                 className="col-md-3 card text-center shadow-sm"
@@ -298,7 +302,7 @@ export default function ActualizacionManual() {
 
               {opcion === 'venta' && (
                 <>
-                  <h4 className="text-danger mb-4 fw-bold">Formulario: Devolución de Venta</h4>
+                  {/* <h4 className="text-danger mb-4 fw-bold">Formulario: Devolución de Venta</h4> */}
                   <form onSubmit={handleSubmit}>
                     <div className="row g-3">
                       <div className="col-md-6">

@@ -50,6 +50,11 @@ export default function Home() {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link to="/proveedores" className="nav-link menu-link">
+                    <i className="fas fa-truck me-2"></i> PROVEEDORES
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link to="/seguridad" className="nav-link menu-link">
                     <i className="fas fa-user-shield me-2"></i> SEGURIDAD
                   </Link>

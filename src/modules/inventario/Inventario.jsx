@@ -67,6 +67,11 @@ export default function Inventario() {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link to="/proveedores" className="nav-link menu-link">
+                    <i className="fas fa-truck me-2"></i> PROVEEDORES
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link to="/seguridad" className="nav-link menu-link">
                     <i className="fas fa-user-shield me-2"></i> SEGURIDAD
                   </Link>
@@ -88,8 +93,7 @@ export default function Inventario() {
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="container mt-5 pt-5" style={{ paddingTop: '120px' }}>
-        <h2 className="text-center mb-5">Bienvenido a Inventario de Comercial Mateo</h2>
-
+        
         {/* TARJETAS */}
         <div className="row justify-content-center g-4">
           <div
@@ -97,7 +101,7 @@ export default function Inventario() {
             onClick={() => navigate('/inventario/nuevo')}
             style={{ cursor: 'pointer' }}
           >
-            <div className="card text-center shadow-sm h-100">
+            <div className="card text-center shadow-sm h-100 tarjeta-pequena">
               <div className="card-body">
                 <i className="fas fa-plus fa-2x text-primary mb-3"></i>
                 <h5 className="card-title">Registrar nuevo producto</h5>
@@ -130,6 +134,36 @@ export default function Inventario() {
                 <i className="fas fa-box-open fa-2x text-success mb-3"></i>
                 <h5 className="card-title">Reabastecer stock</h5>
                 <p className="card-text">Agrega unidades a productos existentes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Segunda fila de tarjetas */}
+        <div className="row justify-content-center g-4 mt-2">
+          <div
+            className="col-md-4"
+            onClick={() => navigate('/proveedores')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card text-center shadow-sm h-100">
+              <div className="card-body">
+                <i className="fas fa-truck fa-2x text-secondary mb-3"></i>
+                <h5 className="card-title">Proveedores</h5>
+                <p className="card-text">Gestiona los proveedores.</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="col-md-4"
+            onClick={() => navigate('/catalogo')}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="card text-center shadow-sm h-100">
+              <div className="card-body">
+                <i className="fas fa-th-large fa-2x text-info mb-3"></i>
+                <h5 className="card-title">Catálogo</h5>
+                <p className="card-text">Explora los productos.</p>
               </div>
             </div>
           </div>

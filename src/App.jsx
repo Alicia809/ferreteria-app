@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './components/AuthContext';
 import RutaProtegida from './components/RutaProtegida';
 import Productos from './modules/inventario/Productos';
+import Proveedores from './modules/proveedor/Proveedores';
 import Inventario from './modules/inventario/Inventario';
 import Facturacion from './modules/facturacion/Facturacion';
 import Reportes from './modules/reportes/Reportes';
@@ -10,6 +11,7 @@ import Login from './modules/seguridad/Login';
 import Register from './modules/seguridad/Register';
 import Eliminar from './modules/seguridad/Eliminar';
 import Editar from './modules/seguridad/Editar';
+import Mostrar from './modules/seguridad/Mostrar';
 import NuevoProducto from './modules/inventario/NuevoProducto';
 import ActualizacionManual from './modules/inventario/ActualizacionManual';
 import ReabastecerStock from './modules/inventario/ReabastecerStock';
@@ -47,6 +49,11 @@ function App() {
               <Editar />
             </RutaProtegida>
           } />
+          <Route path="/mostrar" element={
+            <RutaProtegida>
+              <Mostrar />
+            </RutaProtegida>
+          } />
           <Route path="/inventario" element={
             <RutaProtegida>
               <Inventario />
@@ -55,6 +62,11 @@ function App() {
           <Route path="/productos" element={
             <RutaProtegida>
               <Productos />
+            </RutaProtegida>
+          } />
+          <Route path="/proveedores" element={
+            <RutaProtegida>
+              <Proveedores />
             </RutaProtegida>
           } />
           

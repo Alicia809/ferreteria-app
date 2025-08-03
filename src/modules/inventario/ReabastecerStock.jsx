@@ -66,6 +66,11 @@ export default function ReabastecerStock() {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link to="/proveedores" className="nav-link menu-link">
+                    <i className="fas fa-truck me-2"></i> PROVEEDORES
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link to="/seguridad" className="nav-link menu-link">
                     <i className="fas fa-user-shield me-2"></i> SEGURIDAD
                   </Link>
@@ -81,11 +86,9 @@ export default function ReabastecerStock() {
         </div>
       </nav>
 
-      {/* FRANJA DE SEPARACIÓN */}
-      <div style={{ height: '50px', backgroundColor: '#f8f9fa' }} />
-
       {/* CONTENIDO DEL FORMULARIO */}
-      <div className="container d-flex justify-content-center align-items-start" style={{ paddingTop: '0', minHeight: '80vh' }}>
+      <div className="container d-flex justify-content-center align-items-start" 
+      style={{ paddingTop: '100px', minHeight: '80vh', backgroundColor: '#e2f1ff' }}>
         <div
           style={{
             backgroundColor: '#f8f9fa',

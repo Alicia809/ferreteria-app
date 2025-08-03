@@ -5,32 +5,32 @@ import { FaUserPlus, FaUserEdit, FaUserTimes, FaUsers } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
-const CrudSeguridad = () => {
+const Proveedores = () => {
   const navigate = useNavigate();
 
   const opciones = [
     {
       icon: <FaUserPlus size={40} color="#0d6efd" />,
-      title: 'Crear Usuario',
-      description: 'Registra nuevos usuarios con roles personalizados.',
+      title: 'Nuevo Proveedor',
+      description: 'Registra nuevos proveedores.',
       route: '/register',
     },
     {
       icon: <FaUserEdit size={40} color="#0d6efd" />,
-      title: 'Editar Usuario',
-      description: 'Modifica la información de usuarios existentes.',
+      title: 'Editar Proveedor',
+      description: 'Modifica la información de provedores existentes.',
       route: '/editar',
     },
     {
       icon: <FaUserTimes size={40} color="#0d6efd" />,
-      title: 'Eliminar Usuario',
-      description: 'Elimina usuarios.',
+      title: 'Eliminar Proveedor',
+      description: 'Elimina proveedores.',
       route: '/eliminar',
     },
     {
       icon: <FaUsers size={40} color="#0d6efd" />,
-      title: 'Ver Usuarios',
-      description: 'Ver lalista de usuarios actuales.',
+      title: 'Ver Proveedores',
+      description: 'Ver la lista de proveedores actuales.',
       route: '/mostrar',
     },
   ];
@@ -128,4 +128,4 @@ const CrudSeguridad = () => {
   );
 };
 
-export default CrudSeguridad;
+export default Proveedores;

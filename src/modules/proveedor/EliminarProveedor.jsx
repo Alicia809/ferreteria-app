@@ -6,7 +6,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { Modal, Button } from 'react-bootstrap';
 import { useAuth } from '../../components/AuthContext';
 
-function DeleteLocalUser() {
+function EliminarProveedor() {
   const [username, setUsername] = useState('');
   const [userExists, setUserExists] = useState(false);
   const [error, setError] = useState('');
@@ -153,4 +153,4 @@ function DeleteLocalUser() {
   );
 }
 
-export default DeleteLocalUser;
+export default EliminarProveedor;

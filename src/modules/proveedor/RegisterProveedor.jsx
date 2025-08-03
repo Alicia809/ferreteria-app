@@ -15,7 +15,7 @@ import {
 import { FaArrowLeft } from 'react-icons/fa';
 import { useAuth } from '../../components/AuthContext';
 
-function Register() {
+function RegisterProveedor() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -214,4 +214,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default RegisterProveedor;

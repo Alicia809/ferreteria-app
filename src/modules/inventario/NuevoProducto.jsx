@@ -1,15 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
+
+const unidadesPorTipo = {
+  Longitud: ['Metro (m)', 'Centímetro (cm)', 'Milímetro (mm)', 'Pie (ft)', 'Pulgada (in)'],
+  Peso: ['Kilogramo (kg)', 'Gramo (g)', 'Tonelada (t)', 'Libra (lb)'],
+  Volumen: ['Litro (L)', 'Mililitro (mL)', 'Galón (gal)'],
+  Cantidad: ['Unidad', 'Caja', 'Paquete'],
+};
 
 export default function NuevoProducto() {
   const navigate = useNavigate();
 
+  // Datos básicos
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [categoria, setCategoria] = useState('');
-  const [unidadMedida, setUnidadMedida] = useState('');
-  const [cantidad, setCantidad] = useState('');
+
+  // Proveedor
+  const [proveedorSeleccionado, setProveedorSeleccionado] = useState('');
+  const [proveedores, setProveedores] = useState([]);
+
+  // Compra
+  const [tipoUnidadCompra, setTipoUnidadCompra] = useState('');
+  const [unidadMedidaCompra, setUnidadMedidaCompra] = useState('');
+  const [precioCosto, setPrecioCosto] = useState('');
+
+  // Venta
+  const [tipoUnidadVenta, setTipoUnidadVenta] = useState('');
+  const [unidadMedidaVenta, setUnidadMedidaVenta] = useState('');
+  const [precioVenta, setPrecioVenta] = useState('');
+
+  // Cantidades
+  const [cantidadVenta, setCantidadVenta] = useState('');
+  const [cantidadStock, setCantidadStock] = useState('');
+
   const [productoId, setProductoId] = useState('');
+
+  // Simula obtener proveedores desde base de datos
+  useEffect(() => {
+    const proveedoresSimulados = [
+      { id: 'prov001', nombre: 'Proveedor Uno' },
+      { id: 'prov002', nombre: 'Proveedor Dos' },
+      { id: 'prov003', nombre: 'Proveedor Tres' },
+    ];
+    setProveedores(proveedoresSimulados);
+  }, []);
 
   const generarIdProducto = () => {
     if (!nombre || !categoria) return '';
@@ -19,12 +56,89 @@ export default function NuevoProducto() {
     return `${cat}-${nom}-${num}`;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const id = generarIdProducto();
-    setProductoId(id);
-    console.log({ id, nombre, descripcion, categoria, unidadMedida, cantidad });
+
+    if (
+      parseFloat(precioCosto) < 0 ||
+      parseFloat(precioVenta) < 0 ||
+      parseFloat(cantidadVenta) < 0 ||
+      parseFloat(cantidadStock) < 0
+    ) {
+      alert("Los valores numéricos no pueden ser negativos.");
+      return;
+    }
+
+    if (!productoId) {
+      alert("No se pudo generar el ID del producto. Verifique el nombre y la categoría.");
+      return;
+    }
+
+    const productoData = {
+      id: productoId,
+      nombre,
+      descripcion,
+      categoria,
+      proveedorId: proveedorSeleccionado,
+
+      tipoUnidadCompra,
+      unidadMedidaCompra,
+      precioCosto: parseFloat(precioCosto),
+
+      tipoUnidadVenta,
+      unidadMedidaVenta,
+      precioVenta: parseFloat(precioVenta),
+
+      cantidadVenta: parseFloat(cantidadVenta),
+      cantidadStock: parseFloat(cantidadStock),
+    };
+
+    try {
+      await setDoc(doc(db, 'productos', productoId), productoData);
+      alert('Producto guardado exitosamente');
+      limpiarFormulario(); // ← limpia todo
+      // navigate('/inventario'); // opcional
+    } catch (error) {
+      console.error('Error al guardar el producto:', error);
+      alert('Hubo un error al guardar el producto');
+  }
   };
+
+  const limpiarFormulario = () => {
+    setNombre('');
+    setDescripcion('');
+    setCategoria('');
+    setProveedorSeleccionado('');
+    setTipoUnidadCompra('');
+    setUnidadMedidaCompra('');
+    setPrecioCosto('');
+    setTipoUnidadVenta('');
+    setUnidadMedidaVenta('');
+    setPrecioVenta('');
+    setCantidadVenta('');
+    setCantidadStock('');
+    setProductoId('');
+  };
+
+
+  const handleTipoUnidadCompraChange = (e) => {
+    setTipoUnidadCompra(e.target.value);
+    setUnidadMedidaCompra('');
+  };
+  const handleTipoUnidadVentaChange = (e) => {
+    setTipoUnidadVenta(e.target.value);
+    setUnidadMedidaVenta('');
+  };
+  // Generar ID automáticamente cuando nombre y categoría están listos
+  useEffect(() => {
+    if (nombre.trim() && categoria.trim()) {
+      const id = generarIdProducto();
+      setProductoId(id);
+    } else {
+      setProductoId('');
+    }
+  }, [nombre, categoria]);
+
 
   return (
     <>
@@ -77,6 +191,11 @@ export default function NuevoProducto() {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link to="/proveedores" className="nav-link menu-link">
+                    <i className="fas fa-truck me-2"></i> PROVEEDORES
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link to="/seguridad" className="nav-link menu-link">
                     <i className="fas fa-user-shield me-2"></i> SEGURIDAD
                   </Link>
@@ -92,23 +211,20 @@ export default function NuevoProducto() {
         </div>
       </nav>
 
-      {/* CONTENIDO DEL FORMULARIO */}
-      <div
-        className="container d-flex justify-content-center align-items-start"
-        style={{ paddingTop: '100px', minHeight: '80vh', backgroundColor: '#f8f9fa' }}
-      >
-        <div
+      {/* FORMULARIO */}
+      <div className="container d-flex justify-content-center align-items-start"
+        style={{ paddingTop: '100px', minHeight: '80vh', backgroundColor: '#e2f1ff' }}>
+        <div className="scroll-container"
           style={{
             maxHeight: '75vh',
             overflowY: 'auto',
             padding: '2.5rem',
-            maxWidth: '600px',
+            maxWidth: '1200px',
             width: '100%',
             boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
             borderRadius: '12px',
             backgroundColor: 'white',
           }}
-          className="scroll-container"
         >
           <h2 className="text-center text-primary mb-4" style={{ fontWeight: '700' }}>
             <i className="bi bi-box-seam me-2"></i>Registrar Nuevo Producto
@@ -116,72 +232,120 @@ export default function NuevoProducto() {
 
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
-              <div className="col-md-6">
+              {/* Nombre y categoría */}
+              <div className="col-md-12">
                 <label className="form-label fw-semibold">Nombre del producto</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Ej. Tornillo Phillips"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  required
-                />
+                <input type="text" className="form-control" placeholder="Ej. Tornillo Phillips"
+                  value={nombre} onChange={(e) => setNombre(e.target.value)} required />
               </div>
 
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Categoría</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Ej. Tornillería"
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                  required
-                />
+                <input type="text" className="form-control" placeholder="Ej. Tornillería"
+                  value={categoria} onChange={(e) => setCategoria(e.target.value)} required />
               </div>
 
-              <div className="col-12">
-                <label className="form-label fw-semibold">Descripción</label>
-                <textarea
-                  className="form-control"
-                  rows="3"
-                  placeholder="Descripción detallada del producto"
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                />
-              </div>
-
+              {/* Proveedor */}
               <div className="col-md-6">
-                <label className="form-label fw-semibold">Unidad de medida</label>
-                <select
-                  className="form-select"
-                  value={unidadMedida}
-                  onChange={(e) => setUnidadMedida(e.target.value)}
+                <label className="form-label fw-semibold">Proveedor</label>
+                <select className="form-select"
+                  value={proveedorSeleccionado}
+                  onChange={(e) => setProveedorSeleccionado(e.target.value)}
                   required
                 >
-                  <option value="">Seleccionar unidad</option>
-                  <option value="unidad">Unidad</option>
-                  <option value="metro">Metro</option>
-                  <option value="litro">Litro</option>
-                  <option value="kilo">Kilo</option>
-                  <option value="paquete">Paquete</option>
-                  <option value="rollo">Rollo</option>
+                  <option value="">Seleccionar proveedor</option>
+                  {proveedores.map((prov) => (
+                    <option key={prov.id} value={prov.id}>{prov.nombre}</option>
+                  ))}
                 </select>
               </div>
 
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Cantidad inicial</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  min={0}
-                  placeholder="0"
-                  value={cantidad}
-                  onChange={(e) => setCantidad(e.target.value)}
-                  required
-                />
+              {/* Compra */}
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Tipo de unidad de compra</label>
+                <select className="form-select" value={tipoUnidadCompra} onChange={handleTipoUnidadCompraChange} required>
+                  <option value="">Seleccionar tipo compra</option>
+                  {Object.keys(unidadesPorTipo).map((tipo) => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                  ))}
+                </select>
               </div>
 
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Unidad de medida de compra</label>
+                <select className="form-select" value={unidadMedidaCompra}
+                  onChange={(e) => setUnidadMedidaCompra(e.target.value)}
+                  disabled={!tipoUnidadCompra} required
+                >
+                  <option value="">Seleccionar unidad compra</option>
+                  {tipoUnidadCompra &&
+                    unidadesPorTipo[tipoUnidadCompra].map((unidad) => (
+                      <option key={unidad} value={unidad}>{unidad}</option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Precio costo</label>
+                <input type="number" className="form-control" min={0} step="0.01"
+                  placeholder="Precio que pagas al proveedor"
+                  value={precioCosto} onChange={(e) => setPrecioCosto(e.target.value)} required />
+              </div>
+
+              {/* Venta */}
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Tipo de unidad de venta</label>
+                <select className="form-select" value={tipoUnidadVenta} onChange={handleTipoUnidadVentaChange} required>
+                  <option value="">Seleccionar tipo venta</option>
+                  {Object.keys(unidadesPorTipo).map((tipo) => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Unidad de medida de venta</label>
+                <select className="form-select" value={unidadMedidaVenta}
+                  onChange={(e) => setUnidadMedidaVenta(e.target.value)}
+                  disabled={!tipoUnidadVenta} required
+                >
+                  <option value="">Seleccionar unidad venta</option>
+                  {tipoUnidadVenta &&
+                    unidadesPorTipo[tipoUnidadVenta].map((unidad) => (
+                      <option key={unidad} value={unidad}>{unidad}</option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="col-md-4">
+                <label className="form-label fw-semibold">Precio venta</label>
+                <input type="number" className="form-control" min={0} step="0.01"
+                  placeholder="Precio al cliente"
+                  value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} required />
+              </div>
+
+              {/* Cantidades */}
+              <div className="col-6">
+                <label className="form-label fw-semibold">Cantidad (según unidad compra)</label>
+                <input type="number" className="form-control" min={0}
+                  value={cantidadVenta} onChange={(e) => setCantidadVenta(e.target.value)} required />
+              </div>
+
+              <div className="col-6">
+                <label className="form-label fw-semibold">Cantidad para stock (según unidad venta)</label>
+                <input type="number" className="form-control" min={0}
+                  value={cantidadStock} onChange={(e) => setCantidadStock(e.target.value)} required />
+              </div>
+
+              {/* Descripción */}
+              <div className="col-12">
+                <label className="form-label fw-semibold">Descripción</label>
+                <textarea className="form-control" rows="3"
+                  placeholder="Descripción detallada del producto"
+                  value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+              </div>
+
+              {/* ID generado */}
               {productoId && (
                 <div className="col-12">
                   <div className="alert alert-info mt-3" role="alert">
@@ -204,7 +368,7 @@ export default function NuevoProducto() {
         </div>
       </div>
 
-      {/* Scrollbar styles for WebKit browsers */}
+      {/* Scrollbar personalizado */}
       <style>{`
         .scroll-container::-webkit-scrollbar {
           width: 8px;
