@@ -19,3 +19,5 @@ npm install bootstrap
 npm install @fortawesome/fontawesome-free
 npm install react-bootstrap bootstrap react-icons
 npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
+npm install react-bootstrap bootstrap
+
