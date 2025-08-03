@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 
 const unidadesPorTipo = {
@@ -38,14 +38,22 @@ export default function NuevoProducto() {
 
   const [productoId, setProductoId] = useState('');
 
-  // Simula obtener proveedores desde base de datos
+  // 🔁 Obtener proveedores desde Firestore
   useEffect(() => {
-    const proveedoresSimulados = [
-      { id: 'prov001', nombre: 'Proveedor Uno' },
-      { id: 'prov002', nombre: 'Proveedor Dos' },
-      { id: 'prov003', nombre: 'Proveedor Tres' },
-    ];
-    setProveedores(proveedoresSimulados);
+    const obtenerProveedores = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'proveedores'));
+        const listaProveedores = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          nombre: doc.data().nombre,
+        }));
+        setProveedores(listaProveedores);
+      } catch (error) {
+        console.error('Error al obtener proveedores:', error);
+      }
+    };
+
+    obtenerProveedores();
   }, []);
 
   const generarIdProducto = () => {
@@ -80,15 +88,12 @@ export default function NuevoProducto() {
       descripcion,
       categoria,
       proveedorId: proveedorSeleccionado,
-
       tipoUnidadCompra,
       unidadMedidaCompra,
       precioCosto: parseFloat(precioCosto),
-
       tipoUnidadVenta,
       unidadMedidaVenta,
       precioVenta: parseFloat(precioVenta),
-
       cantidadVenta: parseFloat(cantidadVenta),
       cantidadStock: parseFloat(cantidadStock),
     };
@@ -96,12 +101,11 @@ export default function NuevoProducto() {
     try {
       await setDoc(doc(db, 'productos', productoId), productoData);
       alert('Producto guardado exitosamente');
-      limpiarFormulario(); // ← limpia todo
-      // navigate('/inventario'); // opcional
+      limpiarFormulario();
     } catch (error) {
       console.error('Error al guardar el producto:', error);
       alert('Hubo un error al guardar el producto');
-  }
+    }
   };
 
   const limpiarFormulario = () => {
@@ -120,16 +124,16 @@ export default function NuevoProducto() {
     setProductoId('');
   };
 
-
   const handleTipoUnidadCompraChange = (e) => {
     setTipoUnidadCompra(e.target.value);
     setUnidadMedidaCompra('');
   };
+
   const handleTipoUnidadVentaChange = (e) => {
     setTipoUnidadVenta(e.target.value);
     setUnidadMedidaVenta('');
   };
-  // Generar ID automáticamente cuando nombre y categoría están listos
+
   useEffect(() => {
     if (nombre.trim() && categoria.trim()) {
       const id = generarIdProducto();
@@ -138,7 +142,6 @@ export default function NuevoProducto() {
       setProductoId('');
     }
   }, [nombre, categoria]);
-
 
   return (
     <>
@@ -149,65 +152,6 @@ export default function NuevoProducto() {
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
           </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div
-            className="offcanvas offcanvas-end custom-offcanvas"
-            tabIndex="-1"
-            id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
-          >
-            <div className="offcanvas-header">
-              <button
-                type="button"
-                className="btn-close custom-close-btn"
-                data-bs-dismiss="offcanvas"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div className="offcanvas-body">
-              <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
-              </ul>
-              <div>
-                <button type="button" className="btn btn-outline-danger mt-3">
-                  Cerrar Sesión
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </nav>
 
@@ -235,14 +179,14 @@ export default function NuevoProducto() {
               {/* Nombre y categoría */}
               <div className="col-md-12">
                 <label className="form-label fw-semibold">Nombre del producto</label>
-                <input type="text" className="form-control" placeholder="Ej. Tornillo Phillips"
-                  value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+                <input type="text" className="form-control" value={nombre}
+                  onChange={(e) => setNombre(e.target.value)} required />
               </div>
 
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Categoría</label>
-                <input type="text" className="form-control" placeholder="Ej. Tornillería"
-                  value={categoria} onChange={(e) => setCategoria(e.target.value)} required />
+                <input type="text" className="form-control" value={categoria}
+                  onChange={(e) => setCategoria(e.target.value)} required />
               </div>
 
               {/* Proveedor */}
@@ -288,7 +232,6 @@ export default function NuevoProducto() {
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Precio costo</label>
                 <input type="number" className="form-control" min={0} step="0.01"
-                  placeholder="Precio que pagas al proveedor"
                   value={precioCosto} onChange={(e) => setPrecioCosto(e.target.value)} required />
               </div>
 
@@ -320,7 +263,6 @@ export default function NuevoProducto() {
               <div className="col-md-4">
                 <label className="form-label fw-semibold">Precio venta</label>
                 <input type="number" className="form-control" min={0} step="0.01"
-                  placeholder="Precio al cliente"
                   value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} required />
               </div>
 
@@ -341,7 +283,6 @@ export default function NuevoProducto() {
               <div className="col-12">
                 <label className="form-label fw-semibold">Descripción</label>
                 <textarea className="form-control" rows="3"
-                  placeholder="Descripción detallada del producto"
                   value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
               </div>
 
@@ -349,7 +290,6 @@ export default function NuevoProducto() {
               {productoId && (
                 <div className="col-12">
                   <div className="alert alert-info mt-3" role="alert">
-                    <i className="bi bi-info-circle me-2"></i>
                     <strong>ID generado:</strong> {productoId}
                   </div>
                 </div>
@@ -368,7 +308,7 @@ export default function NuevoProducto() {
         </div>
       </div>
 
-      {/* Scrollbar personalizado */}
+      {/* Scroll personalizado */}
       <style>{`
         .scroll-container::-webkit-scrollbar {
           width: 8px;

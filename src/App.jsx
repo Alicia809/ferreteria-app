@@ -5,6 +5,9 @@ import Productos from './modules/inventario/Productos';
 import Proveedores from './modules/proveedor/Proveedores';
 import Inventario from './modules/inventario/Inventario';
 import Facturacion from './modules/facturacion/Facturacion';
+import FacturaCliente from './modules/facturacion/FacturaCliente';
+import FacturaDevolucion from './modules/facturacion/FacturaDevolucion';
+import ResolucionCAI from './modules/facturacion/ResolucionCAI';
 import Reportes from './modules/reportes/Reportes';
 import CrudSeguridad from './modules/seguridad/CrudSeguridad';
 import Login from './modules/seguridad/Login';
@@ -117,6 +120,21 @@ function App() {
           <Route path="/facturacion" element={
             <RutaProtegida>
               <Facturacion />
+            </RutaProtegida>
+          } />
+          <Route path="/facturacion/cliente" element={
+            <RutaProtegida>
+              <FacturaCliente />
+            </RutaProtegida>
+          } />
+          <Route path="/facturacion/devolucion" element={
+            <RutaProtegida>
+              <FacturaDevolucion />
+            </RutaProtegida>
+          } />
+          <Route path="/facturacion/resolucionCai" element={
+            <RutaProtegida>
+              <ResolucionCAI />
             </RutaProtegida>
           } />
           <Route path="/reportes" element={

@@ -1,36 +1,66 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import '../../App.css';
+import { useNavigate, Link } from 'react-router-dom';
+import { Container, Row, Col, Card } from 'react-bootstrap';
+import { FaUserPlus, FaUserEdit, FaUserTimes, FaFileAlt, FaFileInvoiceDollar, FaUndoAlt  } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { useAuth } from '../../components/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
-export default function Facturacion() {
-  const { logout } = useAuth();
+const Facturacion = () => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const opciones = [
+    {
+      icon: <FaFileAlt  size={40} color="#0d6efd" />,
+      title: 'Resolución CAI',
+      description: 'Actualizar la resolución de CAI.',
+      route: '/facturacion/resolucionCai',
+    },
+    {
+      icon: <FaFileInvoiceDollar  size={40} color="#0d6efd" />,
+      title: 'Crear Factura Cliente',
+      description: 'Realizar una factura para cliente(Venta).',
+      route: '/facturacion/cliente',
+    },
+    {
+      icon: <FaUndoAlt  size={40} color="#0d6efd" />,
+      title: 'Devolución de Venta',
+      description: 'Realizar una factura para cliente(Devolución).',
+      route: '/facturacion/devolucion',
+    },
+  ];
 
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden">
-      {/* NAVBAR */}
+    <>
+      {/* Navbar */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <a className="navbar-brand d-flex align-items-center gap-2">
+          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </a>
-          <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+          </Link>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasNavbar"
+            aria-controls="offcanvasNavbar"
+            aria-label="Toggle navigation"
+          >
             <span className="navbar-toggler-icon"></span>
           </button>
-          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+          <div
+            className="offcanvas offcanvas-end custom-offcanvas"
+            tabIndex="-1"
+            id="offcanvasNavbar"
+            aria-labelledby="offcanvasNavbarLabel"
+          >
             <div className="offcanvas-header">
-              <button type="button" className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              <button
+                type="button"
+                className="btn-close custom-close-btn"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"
+              ></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
@@ -61,7 +91,7 @@ export default function Facturacion() {
                 </li>
               </ul>
               <div>
-                <button type="button" className="btn btn-outline-danger mt-3" onClick={handleLogout}>
+                <button type="button" className="btn btn-outline-danger mt-3">
                   Cerrar Sesión
                 </button>
               </div>
@@ -70,10 +100,26 @@ export default function Facturacion() {
         </div>
       </nav>
 
-      {/* CONTENIDO CENTRADO */}
-      <div className="flex-grow-1 d-flex justify-content-center align-items-center" style={{ marginTop: '80px' }}>
-        <h1 className="text-center">Bienvenido a Facturación de Comercial Mateo</h1>
-      </div>
-    </div>
+      {/* Contenido principal */}
+      <Container className="text-center" style={{ marginTop: '120px' }}>
+        <Row className="justify-content-center">
+          {opciones.map((op, index) => (
+            <Col key={index} xs={12} md={6} lg={4} className="mb-4">
+              <Card
+                className="h-100 p-4 border-0 shadow-sm hover-shadow"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate(op.route)}
+              >
+                <div className="mb-3">{op.icon}</div>
+                <h5 className="fw-bold">{op.title}</h5>
+                <p className="text-muted">{op.description}</p>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </Container>
+    </>
   );
-}
+};
+
+export default Facturacion;
