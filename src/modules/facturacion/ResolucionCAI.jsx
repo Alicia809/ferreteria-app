@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, Table, Button, Modal, Form, Row, Col, InputGroup } from 'react-bootstrap';
-import { FaSearch, FaCheck, FaPlus } from 'react-icons/fa';
+import {
+  Container, Table, Button, Modal, Form, Row, Col, InputGroup
+} from 'react-bootstrap';
+import { FaSearch, FaPlus } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import {
+  collection, getDocs, doc, setDoc, updateDoc
+} from 'firebase/firestore';
+import { db } from '../../firebase';
 
 export default function ResolucionCAI() {
   const navigate = useNavigate();
@@ -20,27 +26,38 @@ export default function ResolucionCAI() {
   });
   const [errores, setErrores] = useState({});
 
-  const handleLogout = async () => {
-    navigate('/login');
-  };
+  useEffect(() => {
+    const obtenerResoluciones = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'resolucionCAI'));
+        const resolucionesFirebase = [];
+        querySnapshot.forEach((docSnap, index) => {
+          resolucionesFirebase.push({
+            id: index + 1,
+            ...docSnap.data()
+          });
+        });
+        setResoluciones(resolucionesFirebase);
+      } catch (error) {
+        console.error('Error al obtener resoluciones de Firestore:', error);
+      }
+    };
 
-  // Función para formatear los inputs con guiones automáticamente
+    obtenerResoluciones();
+  }, []);
+
+  const handleLogout = () => navigate('/login');
+
   const formatearInput = (value, tipo) => {
     if (tipo === 'correlativo') {
       let limpio = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-      return limpio
-        .slice(0, 34)
-        .replace(/(.{6})(.{6})?(.{6})?(.{6})?(.{6})?(.{0,2})?/, (_, a, b, c, d, e, f) =>
-          [a, b, c, d, e, f].filter(Boolean).join('-')
-        );
+      return limpio.slice(0, 34).replace(/(.{6})(.{6})?(.{6})?(.{6})?(.{6})?(.{0,2})?/, (_, a, b, c, d, e, f) =>
+        [a, b, c, d, e, f].filter(Boolean).join('-'));
     }
     if (tipo === 'numero') {
       let limpio = value.replace(/\D/g, '');
-      return limpio
-        .slice(0, 17)
-        .replace(/(.{3})(.{3})?(.{2})?(.{8})?/, (_, a, b, c, d) =>
-          [a, b, c, d].filter(Boolean).join('-')
-        );
+      return limpio.slice(0, 17).replace(/(.{3})(.{3})?(.{2})?(.{8})?/, (_, a, b, c, d) =>
+        [a, b, c, d].filter(Boolean).join('-'));
     }
     return value;
   };
@@ -48,16 +65,12 @@ export default function ResolucionCAI() {
   const validarFormulario = () => {
     const nuevosErrores = {};
     const campos = ['correlativo', 'fecha_emision', 'fecha_recepcion', 'numero_inicial', 'numero_final'];
-    campos.forEach((campo) => {
-      if (!nuevaResolucion[campo]) {
-        nuevosErrores[campo] = 'Este campo es obligatorio';
-      }
+    campos.forEach(campo => {
+      if (!nuevaResolucion[campo]) nuevosErrores[campo] = 'Este campo es obligatorio';
     });
-
     if (nuevaResolucion.correlativo && nuevaResolucion.correlativo.length !== 37) {
       nuevosErrores.correlativo = 'El correlativo debe tener el formato xxxxxx-xxxxxx-xxxxxx-xxxxxx-xxxxxx-xx';
     }
-
     setErrores(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
   };
@@ -65,39 +78,61 @@ export default function ResolucionCAI() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     let nuevoValor = value;
-
     if (name === 'correlativo') nuevoValor = formatearInput(value, 'correlativo');
     if (name === 'numero_inicial' || name === 'numero_final') nuevoValor = formatearInput(value, 'numero');
-
     setNuevaResolucion(prev => ({ ...prev, [name]: nuevoValor }));
   };
 
-  const agregarResolucion = () => {
+  const agregarResolucion = async () => {
     if (!validarFormulario()) return;
 
     const nueva = {
       ...nuevaResolucion,
-      id: resoluciones.length + 1,
       usadas: 0,
       activa: false,
     };
-    setResoluciones([...resoluciones, nueva]);
-    setMostrarModal(false);
-    setErrores({});
-    setNuevaResolucion({
-      correlativo: '',
-      fecha_emision: '',
-      fecha_recepcion: '',
-      numero_inicial: '',
-      numero_final: '',
-    });
+
+    try {
+      await setDoc(doc(db, 'resolucionCAI', nueva.correlativo), nueva);
+      setResoluciones([...resoluciones, { ...nueva, id: resoluciones.length + 1 }]);
+      setMostrarModal(false);
+      setErrores({});
+      setNuevaResolucion({
+        correlativo: '',
+        fecha_emision: '',
+        fecha_recepcion: '',
+        numero_inicial: '',
+        numero_final: '',
+      });
+    } catch (error) {
+      console.error('Error al guardar la resolución en Firestore:', error);
+      alert('Hubo un error al guardar la resolución. Intenta de nuevo.');
+    }
   };
 
-  const activarResolucion = (id) => {
-    setResoluciones(resoluciones.map(r => ({
-      ...r,
-      activa: r.id === id
-    })));
+  const activarResolucion = async (id) => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'resolucionCAI'));
+      const actual = resoluciones.find(r => r.id === id);
+
+      const actualCorrelativo = actual?.correlativo;
+
+      const updates = querySnapshot.docs.map((docSnap) => {
+        const docRef = doc(db, 'resolucionCAI', docSnap.id);
+        const esActiva = docSnap.id === actualCorrelativo;
+        return updateDoc(docRef, { activa: esActiva });
+      });
+
+      await Promise.all(updates);
+
+      setResoluciones(resoluciones.map(r => ({
+        ...r,
+        activa: r.id === id
+      })));
+    } catch (error) {
+      console.error('Error al actualizar resolución activa:', error);
+      alert('Hubo un error al activar la resolución.');
+    }
   };
 
   const resolucionesFiltradas = resoluciones.filter(r =>
@@ -113,46 +148,22 @@ export default function ResolucionCAI() {
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
           </a>
-          <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+          <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
             <span className="navbar-toggler-icon"></span>
           </button>
-          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+          <div className="offcanvas offcanvas-end" tabIndex="-1" id="offcanvasNavbar">
             <div className="offcanvas-header">
-              <button type="button" className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
+                <li className="nav-item"><Link to="/reportes" className="nav-link"><i className="fas fa-chart-line me-2" />REPORTES</Link></li>
+                <li className="nav-item"><Link to="/facturacion" className="nav-link"><i className="fas fa-file-invoice-dollar me-2" />FACTURACIÓN</Link></li>
+                <li className="nav-item"><Link to="/inventario" className="nav-link"><i className="fas fa-boxes me-2" />INVENTARIO</Link></li>
+                <li className="nav-item"><Link to="/proveedores" className="nav-link"><i className="fas fa-truck me-2" />PROVEEDORES</Link></li>
+                <li className="nav-item"><Link to="/seguridad" className="nav-link"><i className="fas fa-user-shield me-2" />SEGURIDAD</Link></li>
               </ul>
-              <div>
-                <button type="button" className="btn btn-outline-danger mt-3" onClick={handleLogout}>
-                  Cerrar Sesión
-                </button>
-              </div>
+              <Button variant="outline-danger" className="mt-3" onClick={handleLogout}>Cerrar Sesión</Button>
             </div>
           </div>
         </div>
@@ -213,7 +224,6 @@ export default function ResolucionCAI() {
               </tr>
             ))}
           </tbody>
-
         </Table>
       </Container>
 
@@ -288,12 +298,8 @@ export default function ResolucionCAI() {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setMostrarModal(false)}>
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={agregarResolucion}>
-            Guardar
-          </Button>
+          <Button variant="secondary" onClick={() => setMostrarModal(false)}>Cancelar</Button>
+          <Button variant="primary" onClick={agregarResolucion}>Guardar</Button>
         </Modal.Footer>
       </Modal>
     </div>

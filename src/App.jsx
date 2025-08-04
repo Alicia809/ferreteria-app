@@ -8,6 +8,7 @@ import Facturacion from './modules/facturacion/Facturacion';
 import FacturaCliente from './modules/facturacion/FacturaCliente';
 import FacturaDevolucion from './modules/facturacion/FacturaDevolucion';
 import ResolucionCAI from './modules/facturacion/ResolucionCAI';
+import ImpuestosDescuentos from './modules/facturacion/ImpuestosDescuentos';
 import Reportes from './modules/reportes/Reportes';
 import CrudSeguridad from './modules/seguridad/CrudSeguridad';
 import Login from './modules/seguridad/Login';
@@ -135,6 +136,11 @@ function App() {
           <Route path="/facturacion/resolucionCai" element={
             <RutaProtegida>
               <ResolucionCAI />
+            </RutaProtegida>
+          } />
+          <Route path="/facturacion/impuestosDescuentos" element={
+            <RutaProtegida>
+              <ImpuestosDescuentos />
             </RutaProtegida>
           } />
           <Route path="/reportes" element={

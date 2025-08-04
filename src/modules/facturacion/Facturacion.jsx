@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card } from 'react-bootstrap';
-import { FaUserPlus, FaUserEdit, FaUserTimes, FaFileAlt, FaFileInvoiceDollar, FaUndoAlt  } from 'react-icons/fa';
+import { FaFileAlt, FaFileInvoiceDollar, FaUndoAlt, FaPercentage   } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
@@ -26,6 +26,12 @@ const Facturacion = () => {
       title: 'Devolución de Venta',
       description: 'Realizar una factura para cliente(Devolución).',
       route: '/facturacion/devolucion',
+    },
+    {
+      icon: <FaPercentage   size={40} color="#0d6efd" />,
+      title: 'Impuestos y Desuentos',
+      description: 'Añadir, editar o eliminar.',
+      route: '/facturacion/impuestosDescuentos',
     },
   ];
 
