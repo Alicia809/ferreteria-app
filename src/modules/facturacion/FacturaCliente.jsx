@@ -7,12 +7,11 @@ import {
 import { FaSearch, FaPlus, FaTrash  } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, updateDoc, setDoc, increment, writeBatch, getDoc, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../components/AuthContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
 
 const CODIGOS_VALIDOS_MUNICIPIOS = new Set([
   '0101','0102','0103','0104','0105','0106','0107','0108',
@@ -99,6 +98,73 @@ export default function FacturaCliente() {
   const [numeroFactura, setNumeroFactura] = useState('');
   const [resolucionActiva, setResolucionActiva] = useState(null);
 
+  const [impuestosSeleccionados, setImpuestosSeleccionados] = useState([]);
+  const [descuentosSeleccionados, setDescuentosSeleccionados] = useState([]);
+  const [mostrarImpuesto, setMostrarImpuesto] = useState(false); // Estado para controlar la visibilidad del impuesto
+  const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false); // Estado para controlar el modal
+
+
+  const handleGuardarEImprimir = async () => {
+    try {
+      if (facturaProductos.length === 0) {
+        alert('Debe agregar al menos un producto.');
+        return;
+      }
+
+      if (!resolucionActiva) {
+        alert('No hay resolución CAI activa.');
+        return;
+      }
+
+      // Obtener el número de factura actual y calcular el siguiente
+      const partesNumeroFactura = resolucionActiva.usadas.split('-'); // Dividir el número de factura en partes
+      const numeroActual = parseInt(partesNumeroFactura[3]); // Obtener la última parte numérica
+      const nuevoNumero = (numeroActual + 1).toString().padStart(9, '0'); // Incrementar y formatear con ceros a la izquierda
+      const nuevoNumeroFactura = `${partesNumeroFactura[0]}-${partesNumeroFactura[1]}-${partesNumeroFactura[2]}-${nuevoNumero}`; // Reconstruir el número de factura
+
+      const subtotal = facturaProductos.reduce((sum, p) => sum + p.monto, 0);
+      const isv = parseFloat((subtotal * 0.15).toFixed(2));
+
+      const facturaData = {
+        numeroFactura: resolucionActiva.usadas,
+        tipoIdent: formData.tipoIdent || 'No especificado',
+        identificacion: formData.identificacion || 'No especificado',
+        fecha: new Date().toISOString(),
+        productos: facturaProductos.map((p) => ({
+          idProducto: p.id,
+          nombre: p.nombre,
+          cantidad: p.cantidad,
+          precioUnitario: p.precio,
+          subtotal: p.cantidad * p.precio,
+        })),
+        subtotalFactura: calcularSubtotal(),
+        impuestos: impuestosSeleccionados,
+        descuentos: descuentosSeleccionados,
+        isv,
+        total: calcularTotal(),
+      };
+
+      // Guardar la factura en la colección "facturas"
+      await setDoc(doc(db, 'facturas', idRegistro), {
+        ...facturaData,
+        id: idRegistro,
+      });
+
+      // Actualizar el número de factura en la resolución activa
+      const resolucionRef = doc(db, 'resolucionCAI', resolucionActiva.id);
+      await updateDoc(resolucionRef, {
+        usadas: nuevoNumeroFactura, // Actualizar el número de factura completo
+      });
+
+      setNumeroFactura(nuevoNumeroFactura); // Actualizar el estado con el nuevo número de factura
+      setMostrarModalConfirmacion(true);// Actualizar el estado con el nuevo número de factura
+    } catch (error) {
+      console.error('Error al guardar e imprimir:', error);
+      alert(`Ocurrió un error: ${error.message}`);
+    }
+  };
+
+
   useEffect(() => {
     const obtenerResolucionActiva = async () => {
       try {
@@ -136,27 +202,24 @@ export default function FacturaCliente() {
 
   useEffect(() => {
     const generarIDRegistro = async () => {
-      const fechaHoy = obtenerFechaFormatoHonduras(); // ej. "04/08/2025"
+      const obtenerFechaFormatoFirestore = () => {
+        const ahora = new Date();
 
-      const facturasRef = collection(db, 'facturas');
-      const consulta = query(facturasRef, where('numeroFactura', '>=', `${fechaHoy}-00000`), where('numeroFactura', '<=', `${fechaHoy}-99999`));
-      const snapshot = await getDocs(consulta);
+        const offsetHonduras = -6 * 60; // UTC-6 en minutos
+        const fechaUTC = ahora.getTime() + ahora.getTimezoneOffset() * 60000;
+        const fechaHonduras = new Date(fechaUTC + offsetHonduras * 60000);
 
-      let mayor = 0;
+        const anio = fechaHonduras.getFullYear();
+        const mes = String(fechaHonduras.getMonth() + 1).padStart(2, '0');
+        const dia = String(fechaHonduras.getDate()).padStart(2, '0');
+        const hora = String(fechaHonduras.getHours()).padStart(2, '0');
+        const minutos = String(fechaHonduras.getMinutes()).padStart(2, '0');
 
-      snapshot.forEach(doc => {
-        const numFactura = doc.data().numeroFactura;
-        const partes = numFactura.split('-');
-        if (partes.length === 2 && partes[0] === fechaHoy) {
-          const numero = parseInt(partes[1]);
-          if (!isNaN(numero) && numero > mayor) {
-            mayor = numero;
-          }
-        }
-      });
+        return `${anio}-${mes}-${dia}-${hora}${minutos}`; // ej: "2025-08-04-1451"
+      };
 
-      const siguienteNumero = (mayor + 1).toString().padStart(5, '0');
-      setIdRegistro(`${fechaHoy}-${siguienteNumero}`);
+      const idRegistro = obtenerFechaFormatoFirestore();
+      setIdRegistro(idRegistro);
     };
 
     generarIDRegistro();
@@ -209,6 +272,17 @@ export default function FacturaCliente() {
     if (!nuevoProducto.cantidad || nuevoProducto.cantidad <= 0) erroresModal.cantidad = 'Cantidad inválida';
     if (!nuevoProducto.precio || nuevoProducto.precio <= 0) erroresModal.precio = 'Precio inválido';
 
+    const productoOriginal = productos.find(p => p.nombre === nuevoProducto.nombre);
+    if (!productoOriginal) {
+      alert('Producto no válido o no encontrado.');
+      return;
+    }
+
+    // Validar que la cantidad seleccionada no exceda la cantidad disponible en stock
+    if (nuevoProducto.cantidad > productoOriginal.cantidadStock) {
+      erroresModal.cantidad = `La cantidad seleccionada excede el stock disponible (${productoOriginal.cantidadStock}).`;
+    }
+
     if (Object.keys(erroresModal).length > 0) {
       setErrores(erroresModal);
       return;
@@ -221,7 +295,14 @@ export default function FacturaCliente() {
     }
 
     const monto = nuevoProducto.cantidad * nuevoProducto.precio;
-    setFacturaProductos([...facturaProductos, { ...nuevoProducto, monto }]);
+    setFacturaProductos([
+      ...facturaProductos,
+      {
+        id: productoOriginal.id,
+        ...nuevoProducto,
+        monto,
+      }
+    ]);
     setNuevoProducto({ nombre: '', cantidad: 1, precio: 0 });
     setErrores({});
     setProductoModal(false);
@@ -248,6 +329,14 @@ export default function FacturaCliente() {
   };
 
   const calcularTotal = () => {
+    const subtotal = facturaProductos.reduce((sum, p) => sum + p.monto, 0);
+    const totalDescuentos = descuentosSeleccionados.reduce((sum, desc) => sum + desc.monto, 0);
+    const totalImpuestos = impuestosSeleccionados.reduce((sum, imp) => sum + imp.monto, 0);
+
+    return (subtotal - totalDescuentos + totalImpuestos).toFixed(2);
+  };
+
+  const calcularSubtotal = () => {
     return facturaProductos.reduce((sum, p) => sum + p.monto, 0).toFixed(2);
   };
 
@@ -295,7 +384,6 @@ export default function FacturaCliente() {
   const handleAgregarDescuentoImpuesto = (item) => {
     const subtotal = facturaProductos.reduce((sum, p) => sum + p.monto, 0);
 
-    // Verifica que el subtotal sea válido antes de calcular el monto
     if (subtotal <= 0) {
       alert("No se puede aplicar un descuento o impuesto sin productos en la factura.");
       return;
@@ -303,12 +391,18 @@ export default function FacturaCliente() {
 
     const monto = (subtotal * (item.porcentaje / 100)).toFixed(2);
 
-    // Guardar el descuento/impuesto aplicado
-    setDescuentoImpuestoAplicado({
-      nombre: item.nombre,
-      porcentaje: item.porcentaje,
-      monto: parseFloat(monto),
-    });
+    // Actualizar el estado con el nuevo impuesto o descuento
+    if (item.tipo === 'Impuesto') {
+      setImpuestosSeleccionados((prev) => [
+        ...prev,
+        { ...item, monto: parseFloat(monto) },
+      ]);
+    } else if (item.tipo === 'Descuento') {
+      setDescuentosSeleccionados((prev) => [
+        ...prev,
+        { ...item, monto: parseFloat(monto) },
+      ]);
+    }
 
     setDescuentoModal(false);
   };
@@ -405,6 +499,7 @@ export default function FacturaCliente() {
             <Table bordered>
               <thead>
                 <tr>
+                  <th>ID</th>
                   <th>Producto</th>
                   <th>Cantidad</th>
                   <th>Precio Unitario</th>
@@ -415,6 +510,7 @@ export default function FacturaCliente() {
               <tbody>
                 {facturaProductos.map((prod, i) => (
                   <tr key={i}>
+                    <td>{prod.id}</td>
                     <td>{prod.nombre}</td>
                     <td>{prod.cantidad}</td>
                     <td>{prod.precio}</td>
@@ -437,21 +533,19 @@ export default function FacturaCliente() {
 
             <Row className="text-end">
               <Col md={{ span: 4, offset: 8 }}>
-                <p>Subtotal: L. {facturaProductos.reduce((sum, p) => sum + p.monto, 0).toFixed(2)}</p>
-                {descuentoImpuestoAplicado && (
-                  <p>
-                    {descuentoImpuestoAplicado.nombre} ({descuentoImpuestoAplicado.porcentaje}%): 
-                    -L. {descuentoImpuestoAplicado.monto.toFixed(2)}
+                <p>Subtotal: L. {calcularSubtotal()}</p>
+                {descuentosSeleccionados.map((desc, i) => (
+                  <p key={i}>
+                    {desc.nombre} ({desc.porcentaje}%): -L. {desc.monto.toFixed(2)}
                   </p>
-                )}
-                <p>Impuesto (15%): L. {calcularImpuesto()}</p>
-                <h5>
-                  Total: L. {(
-                    facturaProductos.reduce((sum, p) => sum + p.monto, 0) +
-                    parseFloat(calcularImpuesto()) -
-                    (descuentoImpuestoAplicado?.monto || 0)
-                  ).toFixed(2)}
-                </h5>
+                ))}
+                {impuestosSeleccionados.map((imp, i) => (
+                  <p key={i}>
+                    {imp.nombre} ({imp.porcentaje}%): +L. {imp.monto.toFixed(2)}
+                  </p>
+                ))}
+                <p>ISV (15%): L. {calcularImpuesto()}</p>
+                <h5>Total: L. {calcularTotal()}</h5>
               </Col>
             </Row>
 
@@ -464,7 +558,7 @@ export default function FacturaCliente() {
                 >
                   Cancelar
                 </Button>
-                <Button variant="success">Guardar e Imprimir</Button>
+                <Button variant="success" onClick={handleGuardarEImprimir}>Guardar e Imprimir</Button>
               </Col>
             </Row>
           </Card.Body>
@@ -550,6 +644,17 @@ export default function FacturaCliente() {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setDescuentoModal(false)}>Cancelar</Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal show={mostrarModalConfirmacion} backdrop="static" centered>
+        <Modal.Header>
+          <Modal.Title>Factura Guardada</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>La factura ha sido guardada y enviada a impresión correctamente.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => window.location.reload()}>Aceptar</Button>
         </Modal.Footer>
       </Modal>
     </div>

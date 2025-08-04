@@ -29,7 +29,7 @@ const Facturacion = () => {
     },
     {
       icon: <FaPercentage   size={40} color="#0d6efd" />,
-      title: 'Impuestos y Desuentos',
+      title: 'Impuestos y Descuentos',
       description: 'Añadir, editar o eliminar.',
       route: '/facturacion/impuestosDescuentos',
     },
