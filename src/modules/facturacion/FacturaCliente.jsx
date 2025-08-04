@@ -7,7 +7,7 @@ import {
 import { FaSearch, FaPlus, FaTrash  } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../components/AuthContext';
 import jsPDF from 'jspdf';
@@ -17,7 +17,68 @@ import html2canvas from 'html2canvas';
 const CODIGOS_VALIDOS_MUNICIPIOS = new Set([
   '0101','0102','0103','0104','0105','0106','0107','0108',
   '0201','0202','0203','0204','0205','0206','0207','0208','0209','0210',
+  '0301','0302','0303','0304','0305','0306','0307','0308','0309','0310','0311',
+  '0312','0313','0314','0315','0316','0317','0318','0319','0320','0321',
+  '0401','0402','0403','0404','0405','0406','0407','0408','0409','0410','0411',
+  '0412','0413','0414','0415','0416','0417','0418','0419','0420','0421','0422','0423',
+  '0501','0502','0503','0504','0505','0506','0507','0508','0509','0510','0511','0512',
+  '0601','0602','0603','0604','0605','0606','0607','0608','0609','0610','0611','0612',
+  '0613','0614','0615','0616',
+  '0701','0702','0703','0704','0705','0706','0707','0708','0709','0710','0711','0712',
+  '0713','0714','0715','0716','0717','0718','0719',
+  '0801','0802','0803','0804','0805','0806','0807','0808','0809','0810','0811','0812',
+  '0813','0814','0815','0816','0817','0818','0819','0820','0821','0822','0823','0824',
+  '0825','0826','0827','0828',
+  '0901','0902','0903','0904','0905','0906',
+  '1001','1002','1003','1004','1005','1006','1007','1008','1009','1010','1011','1012',
+  '1013','1014','1015','1016','1017',
+  '1101','1102','1103','1104',
+  '1201','1202','1203','1204','1205','1206','1207','1208','1209','1210','1211','1212',
+  '1213','1214','1215','1216','1217','1218','1219',
+  '1301','1302','1303','1304','1305','1306','1307','1308','1309','1310','1311','1312',
+  '1313','1314','1315','1316','1317','1318','1319','1320','1321','1322','1323','1324',
+  '1325','1326','1327','1328',
+  '1401','1402','1403','1404','1405','1406','1407','1408','1409','1410','1411','1412',
+  '1413','1414','1415','1416',
+  '1501','1502','1503','1504','1505','1506','1507','1508','1509','1510','1511','1512',
+  '1513','1514','1515','1516','1517','1518','1519','1520','1521','1522','1523',
+  '1601','1602','1603','1604','1605','1606','1607','1608','1609','1610','1611','1612',
+  '1613','1614','1615','1616','1617','1618','1619','1620','1621','1622','1623','1624',
+  '1625','1626','1627','1628',
+  '1701','1702','1703','1704','1705','1706','1707','1708','1709',
+  '1801','1802','1803','1804','1805','1806','1807','1808','1809','1810','1811'
 ]);
+
+
+function obtenerFechaHoraLocalHonduras() {
+  const ahora = new Date();
+
+  const offsetHonduras = -6 * 60; // UTC-6 en minutos
+  const fechaUTC = ahora.getTime() + ahora.getTimezoneOffset() * 60000;
+  const fechaHonduras = new Date(fechaUTC + offsetHonduras * 60000);
+
+  const yyyy = fechaHonduras.getFullYear();
+  const mm = String(fechaHonduras.getMonth() + 1).padStart(2, '0');
+  const dd = String(fechaHonduras.getDate()).padStart(2, '0');
+  const hh = String(fechaHonduras.getHours()).padStart(2, '0');
+  const min = String(fechaHonduras.getMinutes()).padStart(2, '0');
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+function obtenerFechaFormatoHonduras() {
+  const ahora = new Date();
+  const offsetHonduras = -6 * 60;
+  const fechaUTC = ahora.getTime() + ahora.getTimezoneOffset() * 60000;
+  const fechaHonduras = new Date(fechaUTC + offsetHonduras * 60000);
+
+  const dia = String(fechaHonduras.getDate()).padStart(2, '0');
+  const mes = String(fechaHonduras.getMonth() + 1).padStart(2, '0');
+  const anio = fechaHonduras.getFullYear();
+
+  return `${dia}/${mes}/${anio}`;
+}
+
 
 export default function FacturaCliente() {
   const { logout } = useAuth();
@@ -31,6 +92,89 @@ export default function FacturaCliente() {
   const [descuentoModal, setDescuentoModal] = useState(false);
   const [impuestosDescuentos, setImpuestosDescuentos] = useState([]);
   const [descuentoImpuestoAplicado, setDescuentoImpuestoAplicado] = useState(null);
+
+  const [fechaHoraHonduras, setFechaHoraHonduras] = useState('');
+  const [idRegistro, setIdRegistro] = useState('');
+
+  const [numeroFactura, setNumeroFactura] = useState('');
+  const [resolucionActiva, setResolucionActiva] = useState(null);
+
+  useEffect(() => {
+    const obtenerResolucionActiva = async () => {
+      try {
+        const resolucionesRef = collection(db, 'resolucionCAI');
+        const consulta = query(resolucionesRef, where('activa', '==', true));
+        const snapshot = await getDocs(consulta);
+
+        if (!snapshot.empty) {
+          const docRes = snapshot.docs[0]; // Asumimos que solo hay una activa
+          const data = docRes.data();
+
+          setResolucionActiva({ id: docRes.id, ...data });
+
+          // Aquí obtenemos el campo 'usadas' y lo usamos como base para número de factura
+          // Asumiendo que 'usadas' es un número
+          const usadas = data.usadas || 0;
+          // Puedes armar el número con formato o simplemente incrementar
+          const siguienteNumero = usadas;
+
+          // Si tienes prefijo o formato, adaptarlo aquí.
+          // Ejemplo simple:
+          setNumeroFactura(`${siguienteNumero.toString().padStart(6, '0')}`);
+        } else {
+          // No hay resolución activa
+          setNumeroFactura('No hay resolución activa');
+        }
+      } catch (error) {
+        console.error('Error obteniendo resolución activa:', error);
+        setNumeroFactura('Error al obtener número factura');
+      }
+    };
+
+    obtenerResolucionActiva();
+  }, []);
+
+  useEffect(() => {
+    const generarIDRegistro = async () => {
+      const fechaHoy = obtenerFechaFormatoHonduras(); // ej. "04/08/2025"
+
+      const facturasRef = collection(db, 'facturas');
+      const consulta = query(facturasRef, where('numeroFactura', '>=', `${fechaHoy}-00000`), where('numeroFactura', '<=', `${fechaHoy}-99999`));
+      const snapshot = await getDocs(consulta);
+
+      let mayor = 0;
+
+      snapshot.forEach(doc => {
+        const numFactura = doc.data().numeroFactura;
+        const partes = numFactura.split('-');
+        if (partes.length === 2 && partes[0] === fechaHoy) {
+          const numero = parseInt(partes[1]);
+          if (!isNaN(numero) && numero > mayor) {
+            mayor = numero;
+          }
+        }
+      });
+
+      const siguienteNumero = (mayor + 1).toString().padStart(5, '0');
+      setIdRegistro(`${fechaHoy}-${siguienteNumero}`);
+    };
+
+    generarIDRegistro();
+  }, []);
+
+
+  useEffect(() => {
+    const actualizarFecha = () => {
+      setFechaHoraHonduras(obtenerFechaHoraLocalHonduras());
+    };
+
+    actualizarFecha(); // Ejecuta inmediatamente
+
+    const intervalo = setInterval(actualizarFecha, 60000); // Cada minuto
+
+    return () => clearInterval(intervalo); // Limpieza al desmontar
+  }, []);
+
 
   useEffect(() => {
     getDocs(collection(db, 'productos')).then(snapshot => {
@@ -109,65 +253,44 @@ export default function FacturaCliente() {
 
   const validarIdentificacion = () => {
     const { tipoIdent, identificacion } = formData;
-    const partes = identificacion.split('-');
     const erroresTmp = {};
 
-    if (tipoIdent === 'DNI' || tipoIdent === 'RTN') {
-      if ((tipoIdent === 'DNI' && partes.length !== 3) ||
-          (tipoIdent === 'RTN' && partes.length !== 3)) {
-        erroresTmp.identificacion = 'Formato incorrecto';
+    if (tipoIdent === 'DNI') {
+      const regexDNI = /^\d{4}-\d{4}-\d{5}$/;
+      if (!regexDNI.test(identificacion)) {
+        erroresTmp.identificacion = 'Formato DNI inválido. Debe ser XXXX-XXXX-XXXXX';
       } else {
-        const [codMun, anio, corr] = partes;
-        const isDNI = tipoIdent === 'DNI';
-        const lenCorr = isDNI ? 5 : 6;
-        if (
-          codMun.length !== 4 || !/^[0-9]+$/.test(codMun) ||
-          anio.length !== 4 || !/^[0-9]+$/.test(anio) ||
-          corr.length !== lenCorr || !/^[0-9]+$/.test(corr) ||
-          !CODIGOS_VALIDOS_MUNICIPIOS.has(codMun)
-        ) {
-          erroresTmp.identificacion = 'Número inválido o código municipal incorrecto';
+        const [codMun] = identificacion.split('-');
+        if (!CODIGOS_VALIDOS_MUNICIPIOS.has(codMun)) {
+          erroresTmp.identificacion = 'Código municipal inválido en DNI';
         }
       }
+
+    } else if (tipoIdent === 'RTN') {
+      const regexRTN = /^\d{4}-\d{4}-\d{6}$/;
+      if (!regexRTN.test(identificacion)) {
+        erroresTmp.identificacion = 'Formato RTN inválido. Debe ser XXXX-XXXX-XXXXXX';
+      } else {
+        const [codMun] = identificacion.split('-');
+        if (!CODIGOS_VALIDOS_MUNICIPIOS.has(codMun)) {
+          erroresTmp.identificacion = 'Código municipal inválido en RTN';
+        }
+      }
+
+    } else if (tipoIdent === 'PASAPORTE') {
+      const regexPasaporte = /^[A-Z0-9]{6,10}$/;
+      if (!regexPasaporte.test(identificacion)) {
+        erroresTmp.identificacion = 'Pasaporte inválido. Debe tener entre 6 y 10 caracteres alfanuméricos en mayúsculas.';
+      }
+
+    } else if (tipoIdent) {
+      erroresTmp.identificacion = 'Tipo de identificación no reconocido';
     }
-
-    const handleGuardarEImprimir = async () => {
-      if (!validarIdentificacion() || facturaProductos.length === 0) {
-        alert("Datos incompletos o inválidos.");
-        return;
-      }
-
-      // Datos de la factura
-      const facturaData = {
-        fecha: new Date().toISOString(),
-        numeroFactura: `INV/${new Date().getFullYear()}/00001`, // Puedes usar un contador real si deseas
-        identificacion: formData.identificacion,
-        tipoIdentificacion: formData.tipoIdent,
-        productos: facturaProductos,
-        subtotal: facturaProductos.reduce((sum, p) => sum + p.monto, 0),
-        impuesto: parseFloat(calcularImpuesto()),
-        total: parseFloat(calcularTotal()),
-      };
-
-      try {
-        // Guardar en Firestore
-        await addDoc(collection(db, 'facturas'), facturaData);
-
-        // Esperar a que el componente de factura se renderice antes de capturarlo
-        setTimeout(() => {
-          generarPDF(facturaData);
-        }, 500);
-
-      } catch (error) {
-        console.error("Error al guardar factura:", error);
-        alert("No se pudo guardar la factura.");
-      }
-    };
-
 
     setErrores(erroresTmp);
     return Object.keys(erroresTmp).length === 0;
   };
+
 
   const handleAgregarDescuentoImpuesto = (item) => {
     const subtotal = facturaProductos.reduce((sum, p) => sum + p.monto, 0);
@@ -226,19 +349,19 @@ export default function FacturaCliente() {
               <Col md={4}>
                 <Form.Group>
                   <Form.Label>Fecha y hora</Form.Label>
-                  <Form.Control type="datetime-local" value={new Date().toISOString().slice(0, 16)} disabled />
+                  <Form.Control type="datetime-local" value={fechaHoraHonduras} disabled />
                 </Form.Group>
               </Col>
               <Col md={4}>
                 <Form.Group>
                   <Form.Label>Número de factura</Form.Label>
-                  <Form.Control value="AUTO" disabled />
+                  <Form.Control value={numeroFactura} disabled />
                 </Form.Group>
               </Col>
               <Col md={4}>
-                <Form.Group>
+                <Form.Group className="mb-3">
                   <Form.Label>ID Registro</Form.Label>
-                  <Form.Control value={`03/08/2025-00001`} disabled />
+                  <Form.Control type="text" value={idRegistro} disabled />
                 </Form.Group>
               </Col>
               <Col md={6}>
@@ -407,8 +530,10 @@ export default function FacturaCliente() {
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              {impuestosDescuentos.map((item) => (
+           <tbody>
+            {impuestosDescuentos
+              .filter(item => item.activo) // Filtra solo los activos
+              .map((item) => (
                 <tr key={item.id}>
                   <td>{item.nombre}</td>
                   <td>{item.porcentaje}%</td>
@@ -419,8 +544,8 @@ export default function FacturaCliente() {
                     </Button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
+            ))}
+          </tbody>
           </Table>
         </Modal.Body>
         <Modal.Footer>

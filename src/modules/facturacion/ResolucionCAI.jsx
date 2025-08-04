@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Container, Table, Button, Modal, Form, Row, Col, InputGroup
+  Container, Table, Button, Modal, Form, Row, Col, InputGroup, Alert 
 } from 'react-bootstrap';
 import { FaSearch, FaPlus } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import {
-  collection, getDocs, doc, setDoc, updateDoc
+  collection, getDocs, doc, setDoc, updateDoc, deleteDoc
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 
@@ -19,12 +19,22 @@ export default function ResolucionCAI() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [nuevaResolucion, setNuevaResolucion] = useState({
     correlativo: '',
-    fecha_emision: '',
+    fecha_limite_emision: '',
     fecha_recepcion: '',
     numero_inicial: '',
     numero_final: '',
   });
   const [errores, setErrores] = useState({});
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return '';
+    const fecha = new Date(fechaStr);
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    const anio = fecha.getFullYear();
+    return `${dia}/${mes}/${anio}`;
+  };
+  const [alerta, setAlerta] = useState({ tipo: '', mensaje: '', mostrar: false });
+  const [confirmacion, setConfirmacion] = useState({ mostrar: false, correlativo: null });  
 
   useEffect(() => {
     const obtenerResoluciones = async () => {
@@ -38,8 +48,19 @@ export default function ResolucionCAI() {
           });
         });
         setResoluciones(resolucionesFirebase);
+        setAlerta({
+          tipo: 'success',
+          mensaje: 'Resolución activada exitosamente.',
+          mostrar: true
+        });
+
       } catch (error) {
-        console.error('Error al obtener resoluciones de Firestore:', error);
+        setAlerta({
+          tipo: 'danger',
+          mensaje: 'Hubo un error al activar la resolución.',
+          mostrar: true
+        });
+
       }
     };
 
@@ -64,7 +85,7 @@ export default function ResolucionCAI() {
 
   const validarFormulario = () => {
     const nuevosErrores = {};
-    const campos = ['correlativo', 'fecha_emision', 'fecha_recepcion', 'numero_inicial', 'numero_final'];
+    const campos = ['correlativo', 'fecha_limite_emision', 'fecha_recepcion', 'numero_inicial', 'numero_final'];
     campos.forEach(campo => {
       if (!nuevaResolucion[campo]) nuevosErrores[campo] = 'Este campo es obligatorio';
     });
@@ -88,7 +109,7 @@ export default function ResolucionCAI() {
 
     const nueva = {
       ...nuevaResolucion,
-      usadas: 0,
+      usadas: nuevaResolucion.numero_inicial,
       activa: false,
     };
 
@@ -99,36 +120,85 @@ export default function ResolucionCAI() {
       setErrores({});
       setNuevaResolucion({
         correlativo: '',
-        fecha_emision: '',
+        fecha_limite_emision: '',
         fecha_recepcion: '',
         numero_inicial: '',
         numero_final: '',
       });
     } catch (error) {
       console.error('Error al guardar la resolución en Firestore:', error);
-      alert('Hubo un error al guardar la resolución. Intenta de nuevo.');
+      setAlerta({
+        tipo: 'danger',
+        mensaje: 'Hubo un error al guardar la resolución. Intenta de nuevo.',
+        mostrar: true
+      });
     }
   };
 
-  const activarResolucion = async (id) => {
+  const eliminarResolucion = async (correlativo) => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'resolucionCAI'));
-      const actual = resoluciones.find(r => r.id === id);
+      await deleteDoc(doc(db, 'resolucionCAI', correlativo));
+      const nuevasResoluciones = resoluciones.filter(r => r.correlativo !== correlativo);
+      setResoluciones(nuevasResoluciones);
+      setAlerta({
+        tipo: 'success',
+        mensaje: 'Resolución eliminada correctamente.',
+        mostrar: true
+      });
+    } catch (error) {
+      console.error('Error al eliminar resolución:', error);
+      setAlerta({
+        tipo: 'danger',
+        mensaje: 'Hubo un error al eliminar la resolución. Intenta de nuevo.',
+        mostrar: true
+      });
+    } finally {
+      setConfirmacion({ mostrar: false, correlativo: null });
+    }
+  };
 
-      const actualCorrelativo = actual?.correlativo;
+  const activarResolucion = async (correlativo) => {
+    try {
+      const actual = resoluciones.find(r => r.correlativo === correlativo);
+
+      // Obtenemos la fecha límite de emisión desde la resolución
+      const fechaLimite = new Date(`${actual.fecha_limite_emision}T00:00:00-06:00`);
+      
+      // Fecha actual en zona horaria de Honduras
+      const hoy = new Date();
+      const hoyUTC6 = new Date(hoy.toLocaleString('en-US', { timeZone: 'America/Tegucigalpa' }));
+
+      // Validamos que la fecha actual NO sea posterior a la fecha límite
+      if (hoyUTC6 > fechaLimite) {
+        setAlerta({
+          tipo: 'warning',
+          mensaje: 'No se puede activar esta resolución. La fecha límite de emisión ya ha pasado.',
+          mostrar: true
+        });
+        return;
+      }
+
+
+      const querySnapshot = await getDocs(collection(db, 'resolucionCAI'));
 
       const updates = querySnapshot.docs.map((docSnap) => {
         const docRef = doc(db, 'resolucionCAI', docSnap.id);
-        const esActiva = docSnap.id === actualCorrelativo;
+        const esActiva = docSnap.id === correlativo;
         return updateDoc(docRef, { activa: esActiva });
       });
 
       await Promise.all(updates);
 
-      setResoluciones(resoluciones.map(r => ({
-        ...r,
-        activa: r.id === id
-      })));
+      // Refrescamos resoluciones
+      const querySnapshot2 = await getDocs(collection(db, 'resolucionCAI'));
+      const nuevasResoluciones = [];
+      querySnapshot2.forEach((docSnap, index) => {
+        nuevasResoluciones.push({
+          id: index + 1,
+          ...docSnap.data()
+        });
+      });
+      setResoluciones(nuevasResoluciones);
     } catch (error) {
       console.error('Error al actualizar resolución activa:', error);
       alert('Hubo un error al activar la resolución.');
@@ -185,18 +255,29 @@ export default function ResolucionCAI() {
           </Button>
         </div>
 
+        {alerta.mostrar && (
+          <Alert
+            variant={alerta.tipo}
+            onClose={() => setAlerta({ ...alerta, mostrar: false })}
+            dismissible
+          >
+            {alerta.mensaje}
+          </Alert>
+        )}
+
         <Table striped bordered hover responsive>
           <thead className="table-dark">
             <tr>
               <th>#</th>
               <th>Correlativo</th>
-              <th>Fecha Límite</th>
               <th>Fecha Recepción</th>
+              <th>Fecha Límite</th>
               <th>Número Inicial</th>
               <th>Número Final</th>
               <th>Usadas</th>
               <th>Activa</th>
               <th>Seleccionar</th>
+              <th>Eliminar</th>
             </tr>
           </thead>
           <tbody>
@@ -204,22 +285,30 @@ export default function ResolucionCAI() {
               <tr key={r.id}>
                 <td>{idx + 1}</td>
                 <td>{r.correlativo}</td>
-                <td>{r.fecha_emision}</td>
-                <td>{r.fecha_recepcion}</td>
+                <td>{formatearFecha(r.fecha_recepcion)}</td>
+                <td>{formatearFecha(r.fecha_limite_emision)}</td>
                 <td>{r.numero_inicial}</td>
                 <td>{r.numero_final}</td>
                 <td>{r.usadas}</td>
                 <td>{r.activa ? 'Sí' : 'No'}</td>
                 <td>
-                  <div className="form-check form-switch d-flex justify-content-center">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id={`switch-${r.id}`}
-                      checked={r.activa}
-                      onChange={() => activarResolucion(r.id)}
-                    />
-                  </div>
+                  <Button
+                    variant={r.activa ? "success" : "outline-primary"}
+                    size="sm"
+                    onClick={() => activarResolucion(r.correlativo)}
+                    // disabled={r.activa || new Date(r.fecha_limite_emision) < new Date()}
+                  >
+                    {r.activa ? "Activa" : "Activar"}
+                  </Button>
+                </td>
+                <td>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => setConfirmacion({ mostrar: true, correlativo: r.correlativo })}
+                  >
+                    Eliminar
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -251,12 +340,12 @@ export default function ResolucionCAI() {
                   <Form.Label>Fecha Límite de Emisión</Form.Label>
                   <Form.Control
                     type="date"
-                    name="fecha_emision"
-                    value={nuevaResolucion.fecha_emision}
+                    name="fecha_limite_emision"
+                    value={nuevaResolucion.fecha_limite_emision}
                     onChange={handleChange}
-                    isInvalid={!!errores.fecha_emision}
+                    isInvalid={!!errores.fecha_limite_emision}
                   />
-                  <Form.Control.Feedback type="invalid">{errores.fecha_emision}</Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">{errores.fecha_limite_emision}</Form.Control.Feedback>
                 </Form.Group>
               </Col>
               <Col>
@@ -302,6 +391,25 @@ export default function ResolucionCAI() {
           <Button variant="primary" onClick={agregarResolucion}>Guardar</Button>
         </Modal.Footer>
       </Modal>
+      <Modal show={confirmacion.mostrar} onHide={() => setConfirmacion({ mostrar: false, correlativo: null })}>
+      <Modal.Header closeButton>
+        <Modal.Title>Confirmar Eliminación</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        ¿Estás seguro de que deseas eliminar esta resolución?
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setConfirmacion({ mostrar: false, correlativo: null })}>
+          Cancelar
+        </Button>
+        <Button
+          variant="danger"
+          onClick={() => eliminarResolucion(confirmacion.correlativo)}
+        >
+          Eliminar
+        </Button>
+      </Modal.Footer>
+    </Modal>
     </div>
   );
 }
