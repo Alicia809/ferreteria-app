@@ -131,7 +131,7 @@ function Register() {
       </nav>
 
       {/* CONTENIDO PRINCIPAL */}
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', paddingTop: '120px' }}>
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh'}}>
         <Card className="p-4 shadow-sm w-100" style={{ maxWidth: '700px' }}>
           <h3 className="text-center mb-4">Registrar Usuario</h3>
 

@@ -22,6 +22,9 @@ import EditarProveedor from './modules/proveedor/EditarProveedor';
 import MostrarProveedor from './modules/proveedor/MostrarProveedor';
 import NuevoProducto from './modules/inventario/NuevoProducto';
 import ActualizacionManual from './modules/inventario/ActualizacionManual';
+import ActualizacionAjusteManual from './modules/inventario/ActualizacionAjusteManual';
+import ActualizacionDevolucionCompra from './modules/inventario/ActualizacionDevolucionCompra';
+import ActualizacionDevolucionVenta from './modules/inventario/ActualizacionDevolucionVenta';
 import ReabastecerStock from './modules/inventario/ReabastecerStock';
 import NotFound from './NotFound';
 import Home from './Home';
@@ -62,6 +65,8 @@ function App() {
               <Mostrar />
             </RutaProtegida>
           } />
+
+
           <Route path="/registerProveedor" element={
             <RutaProtegida>
               <RegisterProveedor />
@@ -110,6 +115,21 @@ function App() {
               <ActualizacionManual />
             </RutaProtegida>
           } />
+          <Route path="/inventario/actualizacion/ajuste" element={
+            <RutaProtegida>
+              <ActualizacionAjusteManual />
+            </RutaProtegida>
+          } />
+          <Route path="/inventario/actualizacion/compra" element={
+            <RutaProtegida>
+              <ActualizacionDevolucionCompra />
+            </RutaProtegida>
+          } />
+          <Route path="/inventario/actualizacion/venta" element={
+            <RutaProtegida>
+              <ActualizacionDevolucionVenta />
+            </RutaProtegida>
+          } />
           <Route path="/inventario/reabastecer" element={
             <RutaProtegida>
               <ReabastecerStock />
@@ -143,6 +163,7 @@ function App() {
               <ImpuestosDescuentos />
             </RutaProtegida>
           } />
+
           <Route path="/reportes" element={
             <RutaProtegida>
               <Reportes />

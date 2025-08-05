@@ -274,7 +274,7 @@ export default function ResolucionCAI() {
               <th>Fecha Límite</th>
               <th>Número Inicial</th>
               <th>Número Final</th>
-              <th>Usadas</th>
+              <th>Utilizadas</th>
               <th>Activa</th>
               <th>Seleccionar</th>
               <th>Eliminar</th>

@@ -1,13 +1,31 @@
-// src/pages/ActualizacionManual.js
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+// src/pages/AjusteManual.js
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-export default function ActualizacionManual() {
+export default function ActualizacionAjusteManual() {
+  const [producto, setProducto] = useState('');
+  const [cantidad, setCantidad] = useState('');
+  const [fecha, setFecha] = useState('');
+  const [observacion, setObservacion] = useState('');
   const navigate = useNavigate();
 
-  const handleRedireccion = (ruta) => {
-    navigate(ruta);
+  const handleCantidadChange = (e) => {
+    const val = e.target.value;
+    if (val === '') return setCantidad('');
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num >= 1) setCantidad(num);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (cantidad === '' || cantidad < 1) {
+      alert('Por favor ingrese una cantidad válida (mayor o igual a 1).');
+      return;
+    }
+
+    console.log({ producto, cantidad, fecha, observacion });
+    alert('Formulario enviado con éxito');
+    navigate('/actualizacion-manual');
   };
 
   return (
@@ -85,55 +103,35 @@ export default function ActualizacionManual() {
         </div>
       </nav>
 
-      {/* TARJETAS */}
-      <div className="container py-5" style={{ paddingTop: '90px' }}>
-        <h2 className="text-center mb-4 text-primary fw-bold">
-          <i className="bi bi-pencil-square me-2"></i> Actualización Manual de Inventario
-        </h2>
-
-        <div className="row justify-content-center gap-4">
-          <div
-            className="col-md-3 card text-center shadow-sm"
-            onClick={() => handleRedireccion('/inventario/actualizacion/compra')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="card-body">
-              <i className="bi bi-box-arrow-in-left display-4 text-success mb-3"></i>
-              <h5 className="card-title">Devolución de Compra</h5>
-              <p className="card-text text-muted">Registrar devolución a proveedor.</p>
+      <div className="container pt-5 mt-5">
+        <div className="card shadow-lg p-4">
+          <h4 className="text-warning mb-4 fw-bold">Formulario: Ajuste Manual</h4>
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Producto</label>
+                <input type="text" className="form-control" value={producto} onChange={(e) => setProducto(e.target.value)} required />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Cantidad a descontar</label>
+                <input type="number" className="form-control" value={cantidad} onChange={handleCantidadChange} required min={1} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Fecha</label>
+                <input type="date" className="form-control" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold">Observación</label>
+                <textarea className="form-control" rows="3" value={observacion} onChange={(e) => setObservacion(e.target.value)} required />
+              </div>
             </div>
-          </div>
-          <div
-            className="col-md-3 card text-center shadow-sm"
-            onClick={() => handleRedireccion('/inventario/actualizacion/venta')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="card-body">
-              <i className="bi bi-box-arrow-up-right display-4 text-danger mb-3"></i>
-              <h5 className="card-title">Devolución de Venta</h5>
-              <p className="card-text text-muted">Registrar devolución de cliente.</p>
+            <div className="d-flex justify-content-between mt-4">
+              <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/inventario/actualizacion')}>
+                <i className="bi bi-arrow-left me-2"></i> Volver
+              </button>
+              <button type="submit" className="btn btn-warning">Guardar Ajuste</button>
             </div>
-          </div>
-          <div
-            className="col-md-3 card text-center shadow-sm"
-            onClick={() => handleRedireccion('/inventario/actualizacion/ajuste')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="card-body">
-              <i className="bi bi-tools display-4 text-warning mb-3"></i>
-              <h5 className="card-title">Ajuste Manual</h5>
-              <p className="card-text text-muted">Salida por pérdida, vencimiento u otro motivo.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-center mt-4">
-          <button
-            className="btn btn-outline-secondary"
-            onClick={() => navigate('/inventario')}
-          >
-            <i className="bi bi-arrow-left me-2"></i> Volver a Inventario
-          </button>
+          </form>
         </div>
       </div>
     </>

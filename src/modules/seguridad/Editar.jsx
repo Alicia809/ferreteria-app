@@ -182,7 +182,7 @@ function EditLocalUser() {
       </nav>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="container min-vh-100 d-flex justify-content-center align-items-center" style={{ paddingTop: '120px' }}>
+      <div className="container min-vh-100 d-flex justify-content-center align-items-center" >
         <div className="card p-4 shadow-lg" style={{ width: '700px' }}>
           <h4 className="text-center mb-4">Editar Usuario Local</h4>
 
