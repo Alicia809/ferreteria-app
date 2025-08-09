@@ -25,5 +25,6 @@ npm install country-telephone-data
 npm install react-input-mask
 npm install jspdf html2canvas
 npm install bootstrap-select
+npm install jquery bootstrap-select
 
 
