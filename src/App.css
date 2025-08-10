@@ -87,3 +87,41 @@ body {
   box-shadow: -5px 0 10px rgba(0, 0, 0, 0.2);
   border-left: 1px solid #003060;
 }
+
+/* ===== Reportes ===== */
+.reportes-wrapper {
+  padding-top: 90px;          /* despega del navbar fijo */
+  padding-bottom: 40px;
+}
+
+.reportes-header {
+  margin-bottom: 16px;
+}
+
+.reportes-content {
+  display: block;
+}
+
+.chart-card {
+  height: 380px;              /* altura CONTROLADA */
+}
+
+.chart-card .card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-area {
+  position: relative;
+  flex: 1;                    /* la gráfica usa el restante */
+  min-height: 240px;
+}
+
+.chart-summary {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 576px) {
+  .chart-card { height: 360px; }
+}

@@ -5,6 +5,7 @@ import Productos from './modules/inventario/Productos';
 import Proveedores from './modules/proveedor/Proveedores';
 import Inventario from './modules/inventario/Inventario';
 import Facturacion from './modules/facturacion/Facturacion';
+import RegistroFacturas from './modules/facturacion/RegistroFacturas';
 import FacturaCliente from './modules/facturacion/FacturaCliente';
 import FacturaDevolucion from './modules/facturacion/FacturaDevolucion';
 import ResolucionCAI from './modules/facturacion/ResolucionCAI';
@@ -30,6 +31,10 @@ import ListadoReabastecimientos from './modules/inventario/ListadoReabastecimien
 import ReabastecerStock from './modules/inventario/ReabastecerStock';
 import NotFound from './NotFound';
 import Home from './Home';
+import ReportesVentas from './modules/reportes/ReportesVentas.jsx';
+import ReportesInventario from "./modules/reportes/ReportesInventario.jsx";
+import ReportesProductos from "./modules/reportes/ReportesProductos.jsx";
+import ReportesCompras from "./modules/reportes/ReportesCompras.jsx";
 
 function App() {
   return (
@@ -155,6 +160,11 @@ function App() {
               <Facturacion />
             </RutaProtegida>
           } />
+          <Route path="/facturacion/registro" element={
+            <RutaProtegida>
+              <RegistroFacturas />
+            </RutaProtegida>
+          } />
           <Route path="/facturacion/cliente" element={
             <RutaProtegida>
               <FacturaCliente />
@@ -179,6 +189,26 @@ function App() {
           <Route path="/reportes" element={
             <RutaProtegida>
               <Reportes />
+            </RutaProtegida>
+          } />
+          <Route path="/reportes/ventas" element={
+            <RutaProtegida>
+              <ReportesVentas />
+            </RutaProtegida>
+          } />
+          <Route path="/reportes/inventario" element={
+            <RutaProtegida>
+              <ReportesInventario />
+            </RutaProtegida>
+          } />
+          <Route path="/reportes/productos" element={
+            <RutaProtegida>
+              <ReportesProductos />
+            </RutaProtegida>
+          } />
+          <Route path="/reportes/compras" element={
+            <RutaProtegida>
+              <ReportesCompras />
             </RutaProtegida>
           } />
           <Route path="*" element={<NotFound />} />

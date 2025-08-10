@@ -11,6 +11,9 @@ import 'bootstrap-select/dist/css/bootstrap-select.min.css';
 import $ from 'jquery';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import 'bootstrap-select/dist/js/bootstrap-select.min.js';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-select/dist/css/bootstrap-select.min.css";
+
 
 
 createRoot(document.getElementById('root')).render(

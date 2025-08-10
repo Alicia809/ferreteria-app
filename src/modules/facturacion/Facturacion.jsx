@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card } from 'react-bootstrap';
-import { FaFileAlt, FaFileInvoiceDollar, FaUndoAlt, FaPercentage   } from 'react-icons/fa';
+import { FaFileAlt, FaFileInvoiceDollar, FaUndoAlt, FaPercentage } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { useAuth } from '../../components/AuthContext';
@@ -34,6 +34,12 @@ const Facturacion = () => {
       title: 'Impuestos y Descuentos',
       description: 'Añadir, editar o eliminar.',
       route: '/facturacion/impuestosDescuentos',
+    },
+    {
+      icon: <FaUndoAlt size={40} color="#0d6efd" />, // Icono diferente
+      title: 'Registro de Facturas',
+      description: 'Consultar facturas realizadas.',
+      route: '/facturacion/registro', // Ruta a tu vista de registro
     },
   ];
 

@@ -66,6 +66,58 @@ function obtenerFechaHoraLocalHonduras() {
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
+function numeroALetras(num) {
+  const unidades = [
+    '', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve',
+    'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis',
+    'diecisiete', 'dieciocho', 'diecinueve'
+  ];
+  const decenas = [
+    '', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta',
+    'sesenta', 'setenta', 'ochenta', 'noventa'
+  ];
+  const centenas = [
+    '', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos',
+    'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'
+  ];
+
+  if (num === 0) return 'cero centavos';
+
+  const parteEntera = Math.floor(num);
+  const parteDecimal = Math.round((num - parteEntera) * 100);
+
+  function convertir(n) {
+    if (n < 20) return unidades[n];
+    if (n < 100) {
+      return decenas[Math.floor(n / 10)] + (n % 10 !== 0 ? ' y ' + unidades[n % 10] : '');
+    }
+    if (n < 1000) {
+      if (n === 100) return 'cien';
+      return centenas[Math.floor(n / 100)] + ' ' + convertir(n % 100);
+    }
+    if (n < 1000000) {
+      const miles = Math.floor(n / 1000);
+      const resto = n % 1000;
+      return (miles === 1 ? 'mil' : convertir(miles) + ' mil') + (resto > 0 ? ' ' + convertir(resto) : '');
+    }
+    return 'número demasiado grande';
+  }
+
+  return `${convertir(parteEntera)} Lempiras con ${parteDecimal.toString().padStart(2, '0')}/100 Centavos`;
+}
+
+// Formato de fecha legible: dd/mm/yyyy
+function obtenerFechaFormatoHonduras() {
+  const ahora = new Date();
+  const offsetHonduras = -6 * 60;
+  const fechaUTC = ahora.getTime() + ahora.getTimezoneOffset() * 60000;
+  const fechaHonduras = new Date(fechaUTC + offsetHonduras * 60000);
+  const dia = String(fechaHonduras.getDate()).padStart(2, '0');
+  const mes = String(fechaHonduras.getMonth() + 1).padStart(2, '0');
+  const anio = fechaHonduras.getFullYear();
+  return `${dia}/${mes}/${anio}`;
+}
+
 async function obtenerNumerosRestantes() {
   try {
     const resolucionesRef = collection(db, 'resolucionCAI');
@@ -165,7 +217,7 @@ export default function FacturaCliente() {
         fecha: fechaHoraHonduras || 'No especificado',
         productos: facturaProductos.map((p) => ({
           idProducto: p.id || 'No especificado',
-          nombre: p.nombreY || 'No especificado',
+          nombre: p.nombre || 'No especificado',
           cantidad: p.cantidad || 0,
           precioUnitario: p.precio || 0,
           subtotal: p.cantidad * p.precio || 0,
@@ -212,7 +264,37 @@ export default function FacturaCliente() {
       await batch.commit();
 
       setNumeroFactura(nuevoNumeroFactura); // Actualizar el estado con el nuevo número de factura
+      
+      setTimeout(async () => {
+        const input = document.getElementById('facturaPDF');
+        if (!input) {
+          alert('Error: No se encontró el contenedor del PDF.');
+          return;
+        }
+
+        try {
+          const canvas = await html2canvas(input, { scale: 2, useCORS: true });
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const width = pdf.internal.pageSize.getWidth();
+          const height = (canvas.height * width) / canvas.width;
+
+          pdf.addImage(imgData, 'PNG', 10, 10, width - 20, height);
+          const blob = pdf.output('blob');
+          const url = URL.createObjectURL(blob);
+          const win = window.open(url, '_blank');
+
+          if (!win) {
+            alert('El navegador bloqueó la ventana emergente. Por favor, habilítala.');
+          }
+        } catch (err) {
+          console.error('Error generando PDF:', err);
+          alert('Error al generar el PDF. Revisa la consola.');
+        }
+      }, 300);
+
       setMostrarModalConfirmacion(true);// Actualizar el estado con el nuevo número de factura
+
     } catch (error) {
       console.error('Error al guardar e imprimir:', error);
       alert(`Ocurrió un error: ${error.message}`);
@@ -789,6 +871,181 @@ export default function FacturaCliente() {
           <Button variant="primary" onClick={() => window.location.reload()}>Aceptar</Button>
         </Modal.Footer>
       </Modal>
+      {/* Contenedor OCULTO */}
+      <div
+        id="facturaPDF"
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: '-9999px',
+          width: '800px', 
+          padding: '40px',
+          fontFamily: 'Arial, sans-serif',
+          backgroundColor: '#fff',
+          fontSize: '14px', 
+          color: '#000',
+          boxSizing: 'border-box',
+          lineHeight: '1.2', 
+        }}
+      >
+      {/* Encabezado */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start',
+        marginBottom: '15px',
+        borderBottom: '1px solid #000',
+        paddingBottom: '10px',
+      }}>
+
+      <div style={{ flex: 1, textAlign: 'left' }}>
+        <h2 style={{ margin: '0', fontSize: '18px', fontWeight: 'bold' }}>COMERCIAL Y FERRETERÍA MATEO</h2>
+        <p style={{ margin: '2px 0' }}>RTN: 08011999123456</p>
+        <p style={{ margin: '2px 0' }}>DIRECCIÓN: Una cuadra y media al sur del jardín de niños Horizontes Luminosos, El Rosario, Comayagua</p>
+        <p style={{ margin: '2px 0' }}>Tel: (504) 9876-5432</p>
+        <p style={{ margin: '2px 0' }}>Correo: comercialmateo@gmail.com</p>
+        <p style={{ margin: "2px 0" }}>
+          CAI: {resolucionActiva?.correlativo || "ORDEN DE VENTA"}
+        </p>
+        <p style={{ margin: "2px 0" }}>
+          Rango Autorizado:{" "}
+          {resolucionActiva?.numero_inicial || "N/A"} al{" "}
+          {resolucionActiva?.numero_final || "N/A"}
+        </p>
+        <p style={{ margin: "2px 0" }}>
+          Fecha Límite Emisión:{" "}
+          {resolucionActiva?.fecha_limite_emision
+            ? new Date(resolucionActiva.fecha_limite_emision).toLocaleDateString("es-HN")
+            : "N/A"}
+        </p>
+      </div>
+
+
+        <div style={{ textAlign: 'right', minWidth: '150px' }}>
+          <img src="/Logo.png" alt="Logo" style={{ height: '100px', objectFit: 'contain' }} />
+        </div>
+      </div>
+
+
+
+        
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '10px',
+        }}>
+          <div style={{
+            border: '1px solid black',
+            padding: '5px 10px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+          }}>
+            ORDEN DE VENTA<br />
+            No. {resolucionActiva?.usadas}
+          </div>
+          <div style={{ fontSize: '14px', textAlign: 'right' }}>
+            FECHA: {obtenerFechaFormatoHonduras()}
+          </div>
+        </div>
+
+        
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '15px',
+          backgroundColor: '#eee', 
+          padding: '5px 10px',
+          fontWeight: 'bold',
+          fontSize: '14px',
+        }}>
+          <span>CLIENTE: Consumidor Final</span> 
+          <span>{formData.tipoIdent || 'No especificado'}: {formData.identificacion || 'No especificado'}</span>
+        </div>
+
+        {/* Tabla de productos */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '14px' }}>
+          <thead>
+            <tr style={{ borderTop: '1px solid #000', borderBottom: '1px solid #000', backgroundColor: '#e0e0e0' }}> 
+              <th style={{ textAlign: 'left', padding: '5px' }}>CANTIDAD</th>
+              <th style={{ textAlign: 'left', padding: '5px' }}>DESCRIPCION</th>
+              <th style={{ textAlign: 'right', padding: '5px' }}>PRECIO UNITARIO</th>
+              <th style={{ textAlign: 'right', padding: '5px' }}>DESCUENTO</th>
+              <th style={{ textAlign: 'right', padding: '5px' }}>TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {facturaProductos.map((p, i) => (
+              <tr key={i} style={{ borderBottom: '1px dashed #ccc' }}> 
+                <td style={{ padding: '5px', textAlign: 'left' }}>{p.cantidad}</td>
+                <td style={{ padding: '5px', textAlign: 'left' }}>{p.nombre}</td>
+                <td style={{ padding: '5px', textAlign: 'right' }}>L. {p.precio.toFixed(2)}</td>
+                <td style={{ padding: '5px', textAlign: 'right' }}>L. 0.00</td> 
+                <td style={{ padding: '5px', textAlign: 'right' }}>L. {p.monto.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Totales*/}
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '14px' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            width: '300px', 
+            padding: '2px 0',
+          }}>
+            <span>SUBTOTAL:</span>
+            <span>L. {calcularSubtotal()}</span>
+          </div>
+          {descuentosSeleccionados.map((d, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              width: '300px',
+              padding: '2px 0',
+            }}>
+              <span>DESCUENTO ({d.nombre} {d.porcentaje}%):</span>
+              <span>-L. {d.monto.toFixed(2)}</span>
+            </div>
+          ))}
+          {impuestosSeleccionados.map((i, idx) => (
+            <div key={idx} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              width: '300px',
+              padding: '2px 0',
+            }}>
+              <span>IMPUESTO ({i.nombre} {i.porcentaje}%):</span>
+              <span>+L. {i.monto.toFixed(2)}</span>
+            </div>
+          ))}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            width: '300px',
+            padding: '2px 0',
+            borderTop: '1px solid #000',
+            marginTop: '5px',
+            fontWeight: 'bold',
+          }}>
+            <span>TOTAL:</span>
+            <span>L. {calcularTotal()}</span>
+          </div>
+        </div>
+
+        {/* Total en letras */}
+        <div style={{ marginTop: '15px', fontSize: '14px', textAlign: 'left', width: '100%' }}>
+          <p style={{ margin: 0 }}>Total en letras:</p>
+          <p style={{ margin: '2px 0', fontWeight: 'bold' }}>{numeroALetras(parseFloat(calcularTotal())).toUpperCase()} </p>
+        </div>
+
+        {/* Número de unidades facturadas */}
+        <div style={{ marginTop: '15px', fontSize: '14px', textAlign: 'left', width: '100%' }}>
+          <p style={{ margin: 0 }}>Total de unidades facturadas: {facturaProductos.reduce((sum, p) => sum + p.cantidad, 0)}</p>
+        </div>
+      </div>
     </div>
   );
 }
