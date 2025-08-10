@@ -82,13 +82,24 @@ function EditLocalUser() {
       setError('La contraseña no puede estar vacía.');
       return;
     }
+
+    // Validación de seguridad de la contraseña (estándar Google)
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      setError(
+        'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y un carácter especial.'
+      );
+      return;
+    }
+
     if (!rol) {
       setError('Debe seleccionar un rol.');
       return;
     }
 
     try {
-      // Obtener fecha y hora actual con zona horaria de Honduras
       const fechaEditado = new Date().toLocaleString('es-ES', {
         timeZone: 'America/Tegucigalpa',
         hour12: false,
@@ -109,7 +120,7 @@ function EditLocalUser() {
           nombreCreador,
           fechaCreado,
           activo,
-          fechaEditado,  // <-- Aquí agregas la fecha
+          fechaEditado,
         });
         const oldUserRef = doc(db, 'usuarios', currentUsername);
         await deleteDoc(oldUserRef);
@@ -125,7 +136,7 @@ function EditLocalUser() {
           nombreCreador,
           fechaCreado,
           activo,
-          fechaEditado, // <-- Aquí agregas la fecha
+          fechaEditado,
         });
         setMessage('Usuario actualizado correctamente.');
       }
@@ -141,6 +152,7 @@ function EditLocalUser() {
       setError('Error guardando usuario: ' + err.message);
     }
   };
+
 
 
   return (

@@ -3,6 +3,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { useNavigate, Link } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import {
   Container,
   Form,
@@ -22,6 +23,8 @@ function Register() {
   const [rol, setRol] = useState('bodega');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+
 
   const { logout, nombre } = useAuth();
 
@@ -33,11 +36,21 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
+    // Validar contraseña según estándar de Google
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      setError(
+        'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y un carácter especial.'
+      );
+      return;
+    }
+
     try {
-      // Obtener fecha y hora actual en zona horaria Honduras
       const fechaCreado = new Date().toLocaleString('es-ES', {
         timeZone: 'America/Tegucigalpa',
-        hour12: false,
+        hour12: true,
       });
 
       if (rol === 'admin') {
@@ -60,16 +73,17 @@ function Register() {
           nombreCreador: nombre,
           nombreEditor: nombre,
           activo: true,
-          fechaCreado, 
+          fechaCreado,
           fechaEditado: fechaCreado
         });
       }
 
-      navigate('/seguridad'); // Volver al menú de seguridad
+      navigate('/seguridad');
     } catch (err) {
       setError(err.message);
     }
   };
+
 
 
   return (
@@ -127,86 +141,94 @@ function Register() {
       </nav>
 
       {/* CONTENIDO PRINCIPAL */}
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh'}}>
-        <Card className="p-4 shadow-sm w-100" style={{ maxWidth: '700px' }}>
-          <h3 className="text-center mb-4">Registrar Usuario</h3>
+      <div className="card p-4 shadow-lg" style={{ width: '700px' }}>
+        <h3 className="text-center mb-4">Registrar Usuario</h3>
 
-          {error && <Alert variant="danger">{error}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
 
-          <Form onSubmit={handleRegister}>
-            <Form.Group as={Row} className="mb-3 align-items-center" controlId="rol">
+        <Form onSubmit={handleRegister}>
+          <Form.Group as={Row} className="mb-3 align-items-center" controlId="rol">
+            <Form.Label column sm={4} className="text-end mb-0">
+              Rol
+            </Form.Label>
+            <Col sm={8}>
+              <Form.Select value={rol} onChange={(e) => setRol(e.target.value)}>
+                <option value="admin">Administrador general</option>
+                <option value="bodega">Encargado de bodega</option>
+                <option value="ventas">Encargado de ventas</option>
+              </Form.Select>
+            </Col>
+          </Form.Group>
+
+          {rol === 'admin' ? (
+            <Form.Group as={Row} className="mb-3 align-items-center" controlId="email">
               <Form.Label column sm={4} className="text-end mb-0">
-                Rol
-              </Form.Label>
-              <Col sm={8}>
-                <Form.Select value={rol} onChange={(e) => setRol(e.target.value)}>
-                  <option value="admin">Administrador general</option>
-                  <option value="bodega">Encargado de bodega</option>
-                  <option value="ventas">Encargado de ventas</option>
-                </Form.Select>
-              </Col>
-            </Form.Group>
-
-            {rol === 'admin' ? (
-              <Form.Group as={Row} className="mb-3 align-items-center" controlId="email">
-                <Form.Label column sm={4} className="text-end mb-0">
-                  Correo Electrónico
-                </Form.Label>
-                <Col sm={8}>
-                  <Form.Control
-                    type="email"
-                    placeholder="correo@ejemplo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </Col>
-              </Form.Group>
-            ) : (
-              <Form.Group as={Row} className="mb-3 align-items-center" controlId="username">
-                <Form.Label column sm={4} className="text-end mb-0">
-                  Nombre de Usuario
-                </Form.Label>
-                <Col sm={8}>
-                  <Form.Control
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                  />
-                </Col>
-              </Form.Group>
-            )}
-
-            <Form.Group as={Row} className="mb-4 align-items-center" controlId="password">
-              <Form.Label column sm={4} className="text-end mb-0">
-                Contraseña
+                Correo Electrónico
               </Form.Label>
               <Col sm={8}>
                 <Form.Control
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </Col>
             </Form.Group>
+          ) : (
+            <Form.Group as={Row} className="mb-3 align-items-center" controlId="username">
+              <Form.Label column sm={4} className="text-end mb-0">
+                Nombre de Usuario
+              </Form.Label>
+              <Col sm={8}>
+                <Form.Control
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </Col>
+            </Form.Group>
+          )}
 
-            <Row className="mt-3">
-              <Col xs={6} className="d-flex justify-content-start">
-                <Button variant="secondary" onClick={() => navigate('/seguridad')}>
-                  Regresar
+          <Form.Group as={Row} className="mb-4 align-items-center" controlId="password">
+            <Form.Label column sm={4} className="text-end mb-0">
+              Contraseña
+            </Form.Label>
+            <Col sm={8}>
+              <div className="input-group">
+                <Form.Control
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <Button
+                  variant="outline-secondary"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </Button>
-              </Col>
-              <Col xs={6} className="d-flex justify-content-end">
-                <Button variant="primary" type="submit">
-                  Registrar
-                </Button>
-              </Col>
-            </Row>
-          </Form>
-        </Card>
-      </Container>
+              </div>
+            </Col>
+          </Form.Group>
+
+
+          <Row className="mt-3">
+            <Col xs={6} className="d-flex justify-content-start">
+              <Button variant="secondary" onClick={() => navigate('/seguridad')}>
+                Regresar
+              </Button>
+            </Col>
+            <Col xs={6} className="d-flex justify-content-end">
+              <Button variant="primary" type="submit">
+                Registrar
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </div>
     </>
   );
 }

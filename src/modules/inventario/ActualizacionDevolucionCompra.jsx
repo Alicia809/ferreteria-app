@@ -220,7 +220,18 @@ export default function ActualizacionDevolucionCompra() {
 
       {/* FORMULARIO */}
       <div className="container pt-5 mt-5">
-        <div className="card shadow-lg p-4">
+        <div className="scroll-container"
+          style={{
+            maxHeight: '75vh',
+            overflowY: 'auto',
+            padding: '2.5rem',
+            maxWidth: '1200px',
+            width: '100%',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            borderRadius: '12px',
+            backgroundColor: 'white',
+          }}
+        >
           <h4 className="text-success mb-4 fw-bold">
             Formulario: Devolución de Compra
           </h4>
@@ -325,6 +336,23 @@ export default function ActualizacionDevolucionCompra() {
           </form>
         </div>
       </div>
+      {/* Scroll personalizado */}
+      <style>{`
+        .scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .scroll-container::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 12px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb {
+          background-color: #0d6efd;
+          border-radius: 12px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+          background-color: #084298;
+        }
+      `}</style>
     </>
   );
 }

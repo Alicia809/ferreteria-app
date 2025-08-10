@@ -186,7 +186,18 @@ export default function ReabastecerStock() {
         className="flex-grow-1 d-flex flex-column align-items-center pt-5"
         style={{ marginTop: '20px', padding: '2rem' }}
       >
-        <div className="card shadow-lg p-4" style={{ width: '100%', maxWidth: '800px' }}>
+        <div className="scroll-container"
+          style={{
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            padding: '2.5rem',
+            maxWidth: '800px',
+            width: '100%',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            borderRadius: '12px',
+            backgroundColor: 'white',
+          }}
+        >
           <h4 className="text-center mb-4 fw-bold text-success">Reabastecer Stock</h4>
 
           {error && <div className="alert alert-danger">{error}</div>}
@@ -334,4 +345,21 @@ export default function ReabastecerStock() {
       </div>
     </div>
   );
+  {/* Scroll personalizado */}
+  <style>{`
+    .scroll-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    .scroll-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 12px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb {
+      background-color: #0d6efd;
+      border-radius: 12px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb:hover {
+      background-color: #084298;
+    }
+  `}</style>
 }
