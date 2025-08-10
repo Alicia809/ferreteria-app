@@ -25,4 +25,3 @@ npm install country-telephone-data
 npm install react-input-mask
 npm install jspdf html2canvas
 
-
