@@ -4,6 +4,7 @@ import { db } from '../../firebase';
 import { Link, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth } from '../../components/AuthContext';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 function EditLocalUser() {
   const [currentUsername, setCurrentUsername] = useState('');
@@ -13,9 +14,15 @@ function EditLocalUser() {
   const [userLoaded, setUserLoaded] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [fechaCreado, setFechaCreado] = useState('');
+  const [nombreCreador, setNombreCreador] = useState('');
 
-  const { logout } = useAuth();
+
+  const { logout, nombre } = useAuth();
   const navigate = useNavigate();
+  const [activo, setActivo] = useState(true);
+
 
   const handleLogout = async () => {
     await logout();
@@ -27,6 +34,7 @@ function EditLocalUser() {
     setError('');
     setMessage('');
     setUserLoaded(false);
+
 
     if (!currentUsername.trim()) {
       setError('Por favor ingresa el nombre de usuario actual.');
@@ -49,9 +57,12 @@ function EditLocalUser() {
         return;
       }
 
+      setNombreCreador(userData.nombreCreador || '');
+      setFechaCreado(userData.fechaCreado || '');
       setNewUsername(userData.username || currentUsername);
       setPassword(userData.password || '');
       setRol(userData.rol || 'bodega');
+      setActivo(userData.activo !== undefined ? userData.activo : true);
       setUserLoaded(true);
     } catch (err) {
       setError('Error cargando usuario: ' + err.message);
@@ -77,6 +88,12 @@ function EditLocalUser() {
     }
 
     try {
+      // Obtener fecha y hora actual con zona horaria de Honduras
+      const fechaEditado = new Date().toLocaleString('es-ES', {
+        timeZone: 'America/Tegucigalpa',
+        hour12: false,
+      });
+
       if (newUsername !== currentUsername) {
         const newUserRef = doc(db, 'usuarios', newUsername);
         const newUserSnap = await getDoc(newUserRef);
@@ -84,15 +101,32 @@ function EditLocalUser() {
           setError('El nuevo nombre de usuario ya existe.');
           return;
         }
-
-        await setDoc(newUserRef, { username: newUsername, password, rol });
+        await setDoc(newUserRef, {                 
+          username: newUsername,
+          password,
+          rol,
+          nombreEditor: nombre,
+          nombreCreador,
+          fechaCreado,
+          activo,
+          fechaEditado,  // <-- Aquí agregas la fecha
+        });
         const oldUserRef = doc(db, 'usuarios', currentUsername);
         await deleteDoc(oldUserRef);
 
         setMessage('Usuario actualizado y renombrado correctamente.');
       } else {
         const userRef = doc(db, 'usuarios', currentUsername);
-        await setDoc(userRef, { username: newUsername, password, rol });
+        await setDoc(userRef, {
+          username: newUsername,
+          password,
+          rol,
+          nombreEditor: nombre,
+          nombreCreador,
+          fechaCreado,
+          activo,
+          fechaEditado, // <-- Aquí agregas la fecha
+        });
         setMessage('Usuario actualizado correctamente.');
       }
 
@@ -100,31 +134,49 @@ function EditLocalUser() {
       setNewUsername('');
       setPassword('');
       setRol('bodega');
+      setNombreCreador('');
+      setFechaCreado('');
       setUserLoaded(false);
     } catch (err) {
       setError('Error guardando usuario: ' + err.message);
     }
   };
 
+
   return (
     <>
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
+          </a>
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre  || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
           <div
             className="offcanvas offcanvas-end custom-offcanvas"
             tabIndex="-1"
@@ -210,8 +262,8 @@ function EditLocalUser() {
           {userLoaded && (
             <form onSubmit={handleSave}>
               <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Nombre de usuario:</label>
-                <div className="col-sm-7">
+                <label className="col-sm-4 col-form-label">Nombre de usuario:</label>
+                <div className="col-sm-8">
                   <input
                     type="text"
                     className="form-control"
@@ -221,23 +273,30 @@ function EditLocalUser() {
                   />
                 </div>
               </div>
-
               <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Contraseña:</label>
-                <div className="col-sm-7">
-                  <input
-                    type="password"
-                    className="form-control"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                <label className="col-sm-4 col-form-label">Contraseña:</label>
+                <div className="col-sm-8">
+                  <div className="input-group">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="form-control"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                 </div>
               </div>
-
               <div className="mb-3 row align-items-center">
-                <label className="col-sm-5 col-form-label">Rol:</label>
-                <div className="col-sm-7">
+                <label className="col-sm-4 col-form-label">Rol:</label>
+                <div className="col-sm-8">
                   <select
                     className="form-select"
                     value={rol}
@@ -247,6 +306,40 @@ function EditLocalUser() {
                     <option value="bodega">Encargado de bodega</option>
                     <option value="ventas">Encargado de ventas</option>
                   </select>
+                </div>
+              </div>
+              <div className="mb-3 row align-items-center">
+                <label className="col-sm-4 col-form-label">Activo:</label>
+                <div className="col-sm-8 d-flex align-items-center">
+                  <input
+                    type="checkbox"
+                    checked={activo}
+                    onChange={(e) => setActivo(e.target.checked)}
+                  />
+                  <span className="ms-2">{activo ? "Activo" : "Inactivo"}</span>
+                </div>
+              </div>
+              <div className="mb-3 row align-items-center">
+                <label className="col-sm-4 col-form-label">Nombre del creador:</label>
+                <div className="col-sm-8">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={nombreCreador}
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3 row align-items-center">
+                <label className="col-sm-4 col-form-label">Fecha de creación:</label>
+                <div className="col-sm-8">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={fechaCreado}
+                    readOnly
+                  />
                 </div>
               </div>
 

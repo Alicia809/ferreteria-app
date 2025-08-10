@@ -1,14 +1,53 @@
 // src/pages/DevolucionCompra.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../components/AuthContext';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 export default function ActualizacionDevolucionCompra() {
-  const [producto, setProducto] = useState('');
+  const [productos, setProductos] = useState([]);
+  const [productoId, setProductoId] = useState(''); // ahora solo el id del producto
+  const [proveedores, setProveedores] = useState([]);
+  const [proveedorId, setProveedorId] = useState(''); // solo el id del proveedor
   const [cantidad, setCantidad] = useState('');
-  const [proveedor, setProveedor] = useState('');
   const [fecha, setFecha] = useState('');
   const [motivo, setMotivo] = useState('');
+  const [nuevaFactura, setNuevaFactura] = useState('');
+  const [facturaAnterior, setFacturaAnterior] = useState('');
+
   const navigate = useNavigate();
+  const { logout, nombre } = useAuth();
+
+  useEffect(() => {
+    async function fetchProductos() {
+      const productosCol = collection(db, 'productos');
+      const productosSnapshot = await getDocs(productosCol);
+      const productosList = productosSnapshot.docs.map(doc => ({
+        id: doc.id,
+        nombre: doc.data().nombreY || doc.data().nombre || 'Sin nombre',
+      }));
+      setProductos(productosList);
+    }
+
+    async function fetchProveedores() {
+      const proveedoresCol = collection(db, 'proveedores');
+      const proveedoresSnapshot = await getDocs(proveedoresCol);
+      const proveedoresList = proveedoresSnapshot.docs.map(doc => ({
+        id: doc.id,
+        nombre: doc.data().nombreX || doc.data().nombre || 'Sin nombre',
+      }));
+      setProveedores(proveedoresList);
+    }
+
+    fetchProductos();
+    fetchProveedores();
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const handleCantidadChange = (e) => {
     const val = e.target.value;
@@ -17,16 +56,79 @@ export default function ActualizacionDevolucionCompra() {
     if (!isNaN(num) && num >= 1) setCantidad(num);
   };
 
-  const handleSubmit = (e) => {
+  const limpiarFormulario = () => {
+    setProductoId('');
+    setProveedorId('');
+    setCantidad('');
+    setFecha('');
+    setMotivo('');
+    setNuevaFactura('');
+    setFacturaAnterior('');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!productoId) {
+      alert('Por favor selecciona un producto');
+      return;
+    }
+    if (!proveedorId) {
+      alert('Por favor selecciona un proveedor');
+      return;
+    }
     if (cantidad === '' || cantidad < 1) {
       alert('Por favor ingrese una cantidad válida (mayor o igual a 1).');
       return;
     }
+    if (!fecha) {
+      alert('Por favor ingrese una fecha válida');
+      return;
+    }
+    if (!motivo.trim()) {
+      alert('Por favor ingrese un motivo');
+      return;
+    }
+    if (!nuevaFactura.trim()) {
+      alert('Por favor ingrese el número de nueva factura');
+      return;
+    }
+    if (!facturaAnterior.trim()) {
+      alert('Por favor ingrese el número de factura anterior');
+      return;
+    }
 
-    console.log({ producto, cantidad, proveedor, fecha, motivo });
-    alert('Formulario enviado con éxito');
-    navigate('/actualizacion-manual');
+    // Obtener nombres para guardar (del arreglo local)
+    const productoSeleccionado = productos.find(p => p.id === productoId);
+    const proveedorSeleccionado = proveedores.find(p => p.id === proveedorId);
+
+    const fechaHoraHonduras = new Date().toLocaleString('es-HN', {
+      timeZone: 'America/Tegucigalpa',
+      hour12: false
+    });
+
+    const productoData = {
+      productoId,
+      productoNombre: productoSeleccionado ? productoSeleccionado.nombre : 'Desconocido',
+      proveedorId,
+      proveedorNombre: proveedorSeleccionado ? proveedorSeleccionado.nombre : 'Desconocido',
+      cantidad,
+      fecha,
+      motivo,
+      nuevaFactura,
+      facturaAnterior,
+      usuarioEncargado: nombre,
+      fechaRegistradoP: fechaHoraHonduras,
+    };
+
+    try {
+      await addDoc(collection(db, 'productosDevolucionCompra'), productoData);
+      alert('Devolución guardada exitosamente');
+      limpiarFormulario();
+    } catch (error) {
+      console.error('Error al guardar la devolución:', error);
+      alert('Hubo un error al guardar la devolución');
+    }
   };
 
   return (
@@ -34,29 +136,42 @@ export default function ActualizacionDevolucionCompra() {
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
+          </a>
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
           <div
             className="offcanvas offcanvas-end custom-offcanvas"
             tabIndex="-1"
             id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
           >
             <div className="offcanvas-header">
               <button
-                type="button"
                 className="btn-close custom-close-btn"
                 data-bs-dismiss="offcanvas"
                 aria-label="Close"
@@ -92,9 +207,8 @@ export default function ActualizacionDevolucionCompra() {
               </ul>
               <div>
                 <button
-                  type="button"
                   className="btn btn-outline-danger mt-3"
-                  onClick={() => alert('Cerrar sesión')}
+                  onClick={handleLogout}
                 >
                   Cerrar Sesión
                 </button>
@@ -114,30 +228,99 @@ export default function ActualizacionDevolucionCompra() {
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Producto</label>
-                <input type="text" className="form-control" value={producto} onChange={(e) => setProducto(e.target.value)} required />
+                <select
+                  className="form-select"
+                  value={productoId}
+                  onChange={(e) => setProductoId(e.target.value)}
+                  required
+                >
+                  <option value="">Selecciona un producto</option>
+                  {productos.map((prod) => (
+                    <option key={prod.id} value={prod.id}>
+                      {prod.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Cantidad a devolver</label>
-                <input type="number" className="form-control" value={cantidad} onChange={handleCantidadChange} required min={1} />
+                <input
+                  type="number"
+                  className="form-control"
+                  value={cantidad}
+                  onChange={handleCantidadChange}
+                  required
+                  min={1}
+                />
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Proveedor</label>
-                <input type="text" className="form-control" value={proveedor} onChange={(e) => setProveedor(e.target.value)} />
+                <select
+                  className="form-select"
+                  value={proveedorId}
+                  onChange={(e) => setProveedorId(e.target.value)}
+                  required
+                >
+                  <option value="">Selecciona un proveedor</option>
+                  {proveedores.map((prov) => (
+                    <option key={prov.id} value={prov.id}>
+                      {prov.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Fecha</label>
-                <input type="date" className="form-control" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                <input
+                  type="date"
+                  className="form-control"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  required
+                />
               </div>
               <div className="col-12">
                 <label className="form-label fw-semibold">Motivo</label>
-                <textarea className="form-control" rows="3" value={motivo} onChange={(e) => setMotivo(e.target.value)} required />
+                <textarea
+                  className="form-control"
+                  rows="3"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-6">
+                <label className="form-label fw-semibold">Nueva Factura (#)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={nuevaFactura}
+                  onChange={(e) => setNuevaFactura(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-6">
+                <label className="form-label fw-semibold">Factura Anterior (#)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={facturaAnterior}
+                  onChange={(e) => setFacturaAnterior(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div className="d-flex justify-content-between mt-4">
-              <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/inventario/actualizacion')}>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => navigate('/inventario/actualizacion')}
+              >
                 <i className="bi bi-arrow-left me-2"></i> Volver
               </button>
-              <button type="submit" className="btn btn-success">Guardar Devolución</button>
+              <button type="submit" className="btn btn-success">
+                Guardar Devolución
+              </button>
             </div>
           </form>
         </div>

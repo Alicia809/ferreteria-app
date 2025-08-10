@@ -8,7 +8,7 @@ import { useAuth } from './components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
-  const { logout } = useAuth();
+  const { logout, nombre } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -20,17 +20,52 @@ export default function Home() {
     <div className="d-flex flex-column vh-100 overflow-hidden">
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
-        <div className="container-fluid">
+        <div className="container-fluid d-flex justify-content-between align-items-center">
+
+          {/* Logo */}
           <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
           </a>
-          <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre  || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
+
+          {/* Menú lateral */}
+          <div
+            className="offcanvas offcanvas-end custom-offcanvas"
+            tabIndex="-1"
+            id="offcanvasNavbar"
+            aria-labelledby="offcanvasNavbarLabel"
+          >
             <div className="offcanvas-header">
-              <button type="button" className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              <button
+                type="button"
+                className="btn-close custom-close-btn"
+                data-bs-dismiss="offcanvas"
+                aria-label="Close"
+              ></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
@@ -61,7 +96,11 @@ export default function Home() {
                 </li>
               </ul>
               <div>
-                <button type="button" className="btn btn-outline-danger mt-3" onClick={handleLogout}>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger mt-3"
+                  onClick={handleLogout}
+                >
                   Cerrar Sesión
                 </button>
               </div>

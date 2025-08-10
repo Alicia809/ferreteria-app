@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
+import { useAuth } from '../../components/AuthContext';
 
 const unidadesPorTipo = {
   Longitud: ['Metro (m)', 'Centímetro (cm)', 'Milímetro (mm)', 'Pie (ft)', 'Pulgada (in)'],
@@ -14,7 +15,7 @@ export default function NuevoProducto() {
   const navigate = useNavigate();
 
   // Datos básicos
-  const [nombre, setNombre] = useState('');
+  const [nombreY, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [categoria, setCategoria] = useState('');
 
@@ -37,15 +38,21 @@ export default function NuevoProducto() {
   const [cantidadStock, setCantidadStock] = useState('');
 
   const [productoId, setProductoId] = useState('');
+  const {logout,nombre } = useAuth();
 
-  // 🔁 Obtener proveedores desde Firestore
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  //Obtener proveedores desde Firestore
   useEffect(() => {
     const obtenerProveedores = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'proveedores'));
         const listaProveedores = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          nombre: doc.data().nombre,
+          nombreX: doc.data().nombreX,
         }));
         setProveedores(listaProveedores);
       } catch (error) {
@@ -57,8 +64,8 @@ export default function NuevoProducto() {
   }, []);
 
   const generarIdProducto = () => {
-    if (!nombre || !categoria) return '';
-    const nom = nombre.trim().substring(0, 3).toUpperCase();
+    if (!nombreY || !categoria) return '';
+    const nom = nombreY.trim().substring(0, 3).toUpperCase();
     const cat = categoria.trim().substring(0, 3).toUpperCase();
     const num = Date.now().toString().slice(-3);
     return `${cat}-${nom}-${num}`;
@@ -81,10 +88,15 @@ export default function NuevoProducto() {
       alert("No se pudo generar el ID del producto. Verifique el nombre y la categoría.");
       return;
     }
+    // Fecha y hora en zona horaria de Honduras
+    const fechaHoraHonduras = new Date().toLocaleString('es-HN', {
+      timeZone: 'America/Tegucigalpa',
+      hour12: true
+    });
 
     const productoData = {
       id: productoId,
-      nombre,
+      nombreY,
       descripcion,
       categoria,
       proveedorId: proveedorSeleccionado,
@@ -94,8 +106,12 @@ export default function NuevoProducto() {
       tipoUnidadVenta,
       unidadMedidaVenta,
       precioVenta: parseFloat(precioVenta),
-      cantidadVenta: parseFloat(cantidadVenta),
+      cantidadCompra: parseFloat(cantidadVenta),
       cantidadStock: parseFloat(cantidadStock),
+      encargadoRegistroP: nombre || 'Desconocido',
+      encargadoEditoP: nombre || 'Desconocido',
+      fechaRegistradoP: fechaHoraHonduras,
+      fechaEditadoP: fechaHoraHonduras
     };
 
     try {
@@ -135,83 +151,62 @@ export default function NuevoProducto() {
   };
 
   useEffect(() => {
-    if (nombre.trim() && categoria.trim()) {
+    if (nombreY.trim() && categoria.trim()) {
       const id = generarIdProducto();
       setProductoId(id);
     } else {
       setProductoId('');
     }
-  }, [nombre, categoria]);
+  }, [nombreY, categoria]);
 
   return (
     <>
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div
-            className="offcanvas offcanvas-end custom-offcanvas"
-            tabIndex="-1"
-            id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
-          >
+          </a>
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre  || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
+          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar">
             <div className="offcanvas-header">
-              <button
-                type="button"
-                className="btn-close custom-close-btn"
-                data-bs-dismiss="offcanvas"
-                aria-label="Close"
-              ></button>
+              <button className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
+                <li className="nav-item"><Link to="/reportes" className="nav-link menu-link"><i className="fas fa-chart-line me-2"></i> REPORTES</Link></li>
+                <li className="nav-item"><Link to="/facturacion" className="nav-link menu-link"><i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN</Link></li>
+                <li className="nav-item"><Link to="/inventario" className="nav-link menu-link"><i className="fas fa-boxes me-2"></i> INVENTARIO</Link></li>
+                <li className="nav-item"><Link to="/proveedores" className="nav-link menu-link"><i className="fas fa-truck me-2"></i> PROVEEDORES</Link></li>
+                <li className="nav-item"><Link to="/seguridad" className="nav-link menu-link"><i className="fas fa-user-shield me-2"></i> SEGURIDAD</Link></li>
               </ul>
               <div>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger mt-3"
-                  onClick={() => alert('Cerrar sesión')}
-                >
-                  Cerrar Sesión
-                </button>
+                <button className="btn btn-outline-danger mt-3" onClick={handleLogout}>Cerrar Sesión</button>
               </div>
             </div>
           </div>
@@ -242,7 +237,7 @@ export default function NuevoProducto() {
               {/* Nombre y categoría */}
               <div className="col-md-12">
                 <label className="form-label fw-semibold">Nombre del producto</label>
-                <input type="text" className="form-control" value={nombre}
+                <input type="text" className="form-control" value={nombreY}
                   onChange={(e) => setNombre(e.target.value)} required />
               </div>
 
@@ -262,7 +257,7 @@ export default function NuevoProducto() {
                 >
                   <option value="">Seleccionar proveedor</option>
                   {proveedores.map((prov) => (
-                    <option key={prov.id} value={prov.id}>{prov.nombre}</option>
+                    <option key={prov.id} value={prov.id}>{prov.nombreX}</option>
                   ))}
                 </select>
               </div>

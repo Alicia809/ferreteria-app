@@ -25,6 +25,8 @@ import ActualizacionManual from './modules/inventario/ActualizacionManual';
 import ActualizacionAjusteManual from './modules/inventario/ActualizacionAjusteManual';
 import ActualizacionDevolucionCompra from './modules/inventario/ActualizacionDevolucionCompra';
 import ActualizacionDevolucionVenta from './modules/inventario/ActualizacionDevolucionVenta';
+import ListadoAjustes from './modules/inventario/ListadoAjustes';
+import ListadoReabastecimientos from './modules/inventario/ListadoReabastecimientos';
 import ReabastecerStock from './modules/inventario/ReabastecerStock';
 import NotFound from './NotFound';
 import Home from './Home';
@@ -120,6 +122,11 @@ function App() {
               <ActualizacionAjusteManual />
             </RutaProtegida>
           } />
+          <Route path="/inventario/actualizacion/ajustesRealizados" element={
+            <RutaProtegida>
+              <ListadoAjustes />
+            </RutaProtegida>
+          } />
           <Route path="/inventario/actualizacion/compra" element={
             <RutaProtegida>
               <ActualizacionDevolucionCompra />
@@ -133,6 +140,11 @@ function App() {
           <Route path="/inventario/reabastecer" element={
             <RutaProtegida>
               <ReabastecerStock />
+            </RutaProtegida>
+          } />
+          <Route path="/inventario/reabastecer/historialStocks" element={
+            <RutaProtegida>
+              <ListadoReabastecimientos />
             </RutaProtegida>
           } />
 

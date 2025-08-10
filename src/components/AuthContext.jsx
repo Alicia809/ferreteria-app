@@ -19,12 +19,12 @@ export function AuthProvider({ children }) {
         // Usuario admin autenticado con Firebase
         setUsuario({ tipo: 'admin', datos: firebaseUser });
       } else {
-        // Usuario no admin, revisa localStorage para usuario local
+        // Usuario no admin → leer datos guardados en localStorage
         const localUser = localStorage.getItem('usuario');
         const tipoUsuario = localStorage.getItem('tipoUsuario');
 
         if (localUser && tipoUsuario === 'local') {
-          setUsuario({ tipo: 'local', datos: JSON.parse(localUser) });
+          setUsuario({ tipo: 'local', datos: JSON.parse(localUser) }); // Recuperar datos del usuario local
         } else {
           setUsuario(null);
         }
@@ -35,15 +35,18 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
+  // Función para iniciar sesión local (cuando no es Firebase)
+  const loginLocal = (datosUsuario) => {
+    localStorage.setItem('usuario', JSON.stringify(datosUsuario));
+    localStorage.setItem('tipoUsuario', 'local');
+    setUsuario({ tipo: 'local', datos: datosUsuario });
+  };
+
   // Función para cerrar sesión (logout)
   const logout = async () => {
-    // Limpiar localStorage
     localStorage.removeItem('usuario');
     localStorage.removeItem('tipoUsuario');
-
-    // Logout Firebase
     await signOut(auth);
-
     setUsuario(null);
   };
 
@@ -51,6 +54,13 @@ export function AuthProvider({ children }) {
     usuario,
     loading,
     logout,
+    loginLocal, // para usar en el login local
+    nombre:
+      usuario?.tipo === 'admin'
+        ? usuario.datos.email
+        : usuario?.tipo === 'local'
+        ? usuario.datos.nombre
+        : null
   };
 
   return (

@@ -13,6 +13,7 @@ import { useAuth } from '../../components/AuthContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+
 const CODIGOS_VALIDOS_MUNICIPIOS = new Set([
   '0101','0102','0103','0104','0105','0106','0107','0108',
   '0201','0202','0203','0204','0205','0206','0207','0208','0209','0210',
@@ -65,22 +66,43 @@ function obtenerFechaHoraLocalHonduras() {
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
-function obtenerFechaFormatoHonduras() {
-  const ahora = new Date();
-  const offsetHonduras = -6 * 60;
-  const fechaUTC = ahora.getTime() + ahora.getTimezoneOffset() * 60000;
-  const fechaHonduras = new Date(fechaUTC + offsetHonduras * 60000);
+async function obtenerNumerosRestantes() {
+  try {
+    const resolucionesRef = collection(db, 'resolucionCAI');
+    const consulta = query(resolucionesRef, where('activa', '==', true));
+    const snapshot = await getDocs(consulta);
 
-  const dia = String(fechaHonduras.getDate()).padStart(2, '0');
-  const mes = String(fechaHonduras.getMonth() + 1).padStart(2, '0');
-  const anio = fechaHonduras.getFullYear();
+    if (!snapshot.empty) {
+      const data = snapshot.docs[0].data();
 
-  return `${dia}/${mes}/${anio}`;
+      let numeroActual = 0;
+      if (typeof data.usadas === 'string' && data.usadas.includes('-')) {
+        const partesNumero = data.usadas.split('-');
+        numeroActual = parseInt(partesNumero[3]) || 0;
+      } else if (typeof data.usadas === 'number') {
+        numeroActual = data.usadas;
+      }
+
+      let numeroFinal = 0;
+      if (typeof data.numero_final === 'string' && data.numero_final.includes('-')) {
+        const partesFinal = data.numero_final.split('-');
+        numeroFinal = parseInt(partesFinal[3]) || 0;
+      } else if (typeof data.numero_final === 'number') {
+        numeroFinal = data.numero_final;
+      }
+
+      return numeroFinal - numeroActual;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error al obtener números restantes:', error);
+    return null;
+  }
 }
 
 
+
 export default function FacturaCliente() {
-  const { logout } = useAuth();
   const navigate = useNavigate();
   const [productos, setProductos] = useState([]);
   const [productoModal, setProductoModal] = useState(false);
@@ -103,6 +125,13 @@ export default function FacturaCliente() {
   const [mostrarImpuesto, setMostrarImpuesto] = useState(false); // Estado para controlar la visibilidad del impuesto
   const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false); // Estado para controlar el modal
 
+  const {logout,nombre } = useAuth();
+
+  const [terminoBusqueda, setTerminoBusqueda] = useState('');
+
+  const [numerosRestantes, setNumerosRestantes] = useState(null);
+  const [mostrarAlerta, setMostrarAlerta] = useState(false);
+  
 
   const handleGuardarEImprimir = async () => {
     try {
@@ -124,24 +153,29 @@ export default function FacturaCliente() {
 
       const subtotal = facturaProductos.reduce((sum, p) => sum + p.monto, 0);
       const isv = parseFloat((subtotal * 0.15).toFixed(2));
+      const fechaHoraHonduras = new Date().toLocaleString('es-HN', {
+        timeZone: 'America/Tegucigalpa',
+        hour12: true
+      });
 
       const facturaData = {
-        numeroFactura: resolucionActiva.usadas,
+        numeroFactura: resolucionActiva.usadas || 'No especificado',
         tipoIdent: formData.tipoIdent || 'No especificado',
         identificacion: formData.identificacion || 'No especificado',
-        fecha: new Date().toISOString(),
+        fecha: fechaHoraHonduras || 'No especificado',
         productos: facturaProductos.map((p) => ({
-          idProducto: p.id,
-          nombre: p.nombre,
-          cantidad: p.cantidad,
-          precioUnitario: p.precio,
-          subtotal: p.cantidad * p.precio,
+          idProducto: p.id || 'No especificado',
+          nombre: p.nombreY || 'No especificado',
+          cantidad: p.cantidad || 0,
+          precioUnitario: p.precio || 0,
+          subtotal: p.cantidad * p.precio || 0,
         })),
-        subtotalFactura: calcularSubtotal(),
-        impuestos: impuestosSeleccionados,
-        descuentos: descuentosSeleccionados,
-        isv,
-        total: calcularTotal(),
+        subtotalFactura: calcularSubtotal() || 0,
+        impuestos: impuestosSeleccionados || [],
+        descuentos: descuentosSeleccionados || [],
+        isv : isv || 0,
+        total: calcularTotal() || 0,
+        usuarioEncargado: nombre || 'Desconocido',
       };
 
       // Guardar la factura en la colección "facturas"
@@ -167,7 +201,7 @@ export default function FacturaCliente() {
           const nuevaCantidadStock = (productoData.cantidadStock || 0) - producto.cantidad;
 
           if (nuevaCantidadStock < 0) {
-            alert(`El producto "${producto.nombre}" no tiene suficiente stock.`);
+            alert(`El producto "${producto.nombreY}" no tiene suficiente stock.`);
             return;
           }
 
@@ -220,6 +254,21 @@ export default function FacturaCliente() {
 
     obtenerResolucionActiva();
   }, []);
+
+  useEffect(() => {
+      const verificarNumeros = async () => {
+        const restantes = await obtenerNumerosRestantes();
+        if (restantes !== null) {
+          setNumerosRestantes(restantes);
+          setMostrarAlerta(restantes < 15);
+        } else {
+          setMostrarAlerta(false);
+        }
+      };
+
+      verificarNumeros();
+    }, []);
+
 
   useEffect(() => {
     const generarIDRegistro = async () => {
@@ -289,11 +338,11 @@ export default function FacturaCliente() {
   const handleAgregarProducto = () => {
     const erroresModal = {};
 
-    if (!nuevoProducto.nombre) erroresModal.nombre = 'Debe seleccionar un producto';
+    if (!nuevoProducto.nombre) erroresModal.nombreY = 'Debe seleccionar un producto';
     if (!nuevoProducto.cantidad || nuevoProducto.cantidad <= 0) erroresModal.cantidad = 'Cantidad inválida';
     if (!nuevoProducto.precio || nuevoProducto.precio <= 0) erroresModal.precio = 'Precio inválido';
 
-    const productoOriginal = productos.find(p => p.nombre === nuevoProducto.nombre);
+    const productoOriginal = productos.find(p => p.nombreY === nuevoProducto.nombre);
     if (!productoOriginal) {
       alert('Producto no válido o no encontrado.');
       return;
@@ -309,7 +358,7 @@ export default function FacturaCliente() {
       return;
     }
 
-    const yaExiste = facturaProductos.some(p => p.nombre === nuevoProducto.nombre);
+    const yaExiste = facturaProductos.some(p => p.nombreY === nuevoProducto.nombre);
     if (yaExiste) {
       alert('Este producto ya ha sido agregado.');
       return;
@@ -336,9 +385,9 @@ export default function FacturaCliente() {
   };
 
   const handleSeleccionProducto = (nombreSeleccionado) => {
-    const producto = productos.find(p => p.nombre === nombreSeleccionado);
+    const producto = productos.find(p => p.nombreY === nombreSeleccionado);
     if (producto) {
-      setNuevoProducto({ ...nuevoProducto, nombre: producto.nombre, precio: producto.precioVenta });
+      setNuevoProducto({ ...nuevoProducto, nombre: producto.nombreY, precio: producto.precioVenta });
     } else {
       setNuevoProducto({ ...nuevoProducto, nombre: '', precio: 0 });
     }
@@ -433,78 +482,62 @@ export default function FacturaCliente() {
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div
-            className="offcanvas offcanvas-end custom-offcanvas"
-            tabIndex="-1"
-            id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
-          >
+          </a>
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre  || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
+          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar">
             <div className="offcanvas-header">
-              <button
-                type="button"
-                className="btn-close custom-close-btn"
-                data-bs-dismiss="offcanvas"
-                aria-label="Close"
-              ></button>
+              <button className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
+                <li className="nav-item"><Link to="/reportes" className="nav-link menu-link"><i className="fas fa-chart-line me-2"></i> REPORTES</Link></li>
+                <li className="nav-item"><Link to="/facturacion" className="nav-link menu-link"><i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN</Link></li>
+                <li className="nav-item"><Link to="/inventario" className="nav-link menu-link"><i className="fas fa-boxes me-2"></i> INVENTARIO</Link></li>
+                <li className="nav-item"><Link to="/proveedores" className="nav-link menu-link"><i className="fas fa-truck me-2"></i> PROVEEDORES</Link></li>
+                <li className="nav-item"><Link to="/seguridad" className="nav-link menu-link"><i className="fas fa-user-shield me-2"></i> SEGURIDAD</Link></li>
               </ul>
               <div>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger mt-3"
-                  onClick={() => alert('Cerrar sesión')}
-                >
-                  Cerrar Sesión
-                </button>
+                <button className="btn btn-outline-danger mt-3" onClick={handleLogout}>Cerrar Sesión</button>
               </div>
             </div>
           </div>
         </div>
       </nav>
 
-      <Container style={{ marginTop: '90px' }}>
+      <Container style={{ marginTop: '90px' }}>        
         <Card>
+          {mostrarAlerta && numerosRestantes !== null && (
+            <div className="alert alert-warning" role="alert">
+              Quedan <strong>{numerosRestantes}</strong> números disponibles para llegar al límite de la resolución CAI.
+            </div>
+          )}
           <Card.Body>
             <Row className="border-bottom mb-3 pb-3">
               <Col md={4}>
@@ -591,7 +624,6 @@ export default function FacturaCliente() {
                       >
                         <FaTrash />
                       </Button>
-
                     </td>
                   </tr>
                 ))}
@@ -603,12 +635,12 @@ export default function FacturaCliente() {
                 <p>Subtotal: L. {calcularSubtotal()}</p>
                 {descuentosSeleccionados.map((desc, i) => (
                   <p key={i}>
-                    {desc.nombre} ({desc.porcentaje}%): -L. {desc.monto.toFixed(2)}
+                    {desc.nombreY} ({desc.porcentaje}%): -L. {desc.monto.toFixed(2)}
                   </p>
                 ))}
                 {impuestosSeleccionados.map((imp, i) => (
                   <p key={i}>
-                    {imp.nombre} ({imp.porcentaje}%): +L. {imp.monto.toFixed(2)}
+                    {imp.nombreY} ({imp.porcentaje}%): +L. {imp.monto.toFixed(2)}
                   </p>
                 ))}
                 <p>ISV (15%): L. {calcularImpuesto()}</p>
@@ -631,52 +663,85 @@ export default function FacturaCliente() {
           </Card.Body>
         </Card>
       </Container>
-
       <Modal show={productoModal} onHide={() => setProductoModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Agregar Producto</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {/* Campo de búsqueda con lupa */}
           <Form.Group className="mb-2">
-            <Form.Label>Producto</Form.Label>
+            <Form.Label>Buscar producto</Form.Label>
             <InputGroup>
-              <Form.Select
-                value={nuevoProducto.nombre}
-                onChange={e => handleSeleccionProducto(e.target.value)}>
-                <option value="">-- Seleccionar --</option>
-                {productos.map(p => (
-                  <option key={p.id} value={p.nombre}>{p.nombre}</option>
-                ))}
-              </Form.Select>
-              <InputGroup.Text><FaSearch /></InputGroup.Text>
+              <Form.Control
+                type="text"
+                placeholder="Buscar producto..."
+                value={terminoBusqueda}
+                onChange={(e) => setTerminoBusqueda(e.target.value)}
+              />
+              <InputGroup.Text>
+                <FaSearch />
+              </InputGroup.Text>
             </InputGroup>
-            {errores.nombre && <div className="text-danger small">{errores.nombre}</div>}
           </Form.Group>
+
+          {/* Lista de productos filtrados */}
+          <Form.Group className="mb-2">
+            <Form.Select
+              value={nuevoProducto.nombre}
+              onChange={(e) => handleSeleccionProducto(e.target.value)}
+            >
+              <option value="">-- Seleccionar --</option>
+              {productos
+                .filter((p) =>
+                  p.nombreY?.toLowerCase().includes(terminoBusqueda?.toLowerCase() || '')
+                )
+                .map((p) => (
+                  <option key={p.id} value={p.nombreY}>
+                    {p.nombreY}
+                  </option>
+                ))}
+            </Form.Select>
+            {errores.nombreY && (
+              <div className="text-danger small">{errores.nombreY}</div>
+            )}
+          </Form.Group>
+
+          {/* Cantidad */}
           <Form.Group className="mb-2">
             <Form.Label>Cantidad</Form.Label>
             <Form.Control
               type="number"
               value={nuevoProducto.cantidad}
-              onChange={e => setNuevoProducto({ ...nuevoProducto, cantidad: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setNuevoProducto({
+                  ...nuevoProducto,
+                  cantidad: parseInt(e.target.value) || 0,
+                })
+              }
             />
-            {errores.cantidad && <div className="text-danger small">{errores.cantidad}</div>}
+            {errores.cantidad && (
+              <div className="text-danger small">{errores.cantidad}</div>
+            )}
           </Form.Group>
+
+          {/* Precio unitario */}
           <Form.Group>
             <Form.Label>Precio Unitario</Form.Label>
-            <Form.Control
-              type="number"
-              value={nuevoProducto.precio}
-              readOnly
-            />
-            {errores.precio && <div className="text-danger small">{errores.precio}</div>}
+            <Form.Control type="number" value={nuevoProducto.precio} readOnly />
+            {errores.precio && (
+              <div className="text-danger small">{errores.precio}</div>
+            )}
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setProductoModal(false)}>Cancelar</Button>
-          <Button variant="primary" onClick={handleAgregarProducto}>Agregar</Button>
+          <Button variant="secondary" onClick={() => setProductoModal(false)}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleAgregarProducto}>
+            Agregar
+          </Button>
         </Modal.Footer>
       </Modal>
-
       <Modal show={descuentoModal} onHide={() => setDescuentoModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Seleccionar Descuento/Impuesto</Modal.Title>

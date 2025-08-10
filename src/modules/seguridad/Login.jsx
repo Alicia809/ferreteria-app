@@ -10,24 +10,63 @@ import EmailIcon from '@mui/icons-material/Email';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import { useAuth } from '../../components/AuthContext';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import IconButton from '@mui/material/IconButton';
 
 function Login() {
-  const { usuario } = useAuth();  // Solo para saber si ya está autenticado (opcional)
   const [esAdmin, setEsAdmin] = useState(true);
   const [inputUsuario, setInputUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [advertenciaCAI, setAdvertenciaCAI] = useState('');
   const navigate = useNavigate();
+  const { usuario, loginLocal } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Función para verificar resolución CAI activa y días restantes
+  const verificarResolucionCAI = async () => {
+    try {
+      const q = query(collection(db, 'resolucionCAI'), where('activa', '==', true));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const resolucionActiva = querySnapshot.docs[0].data();
+        const fechaLimiteStr = resolucionActiva.fecha_limite_emision; // ej: '2025-08-15'
+        const fechaLimite = new Date(`${fechaLimiteStr}T00:00:00-06:00`);
+        
+        const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Tegucigalpa' }));
+
+        const diffTiempo = fechaLimite.getTime() - hoy.getTime();
+        const diffDias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24));
+
+        if (diffDias <= 5 && diffDias >= 0) {
+          setAdvertenciaCAI(`¡Atención! La resolución CAI activa vence en ${diffDias} día(s).`);
+          return true; // indica que hay advertencia
+        }
+      }
+    } catch (error) {
+      console.error('Error al verificar resolución CAI:', error);
+    }
+    return false; // no hay advertencia
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setAdvertenciaCAI('');
 
     if (esAdmin) {
       try {
         await signInWithEmailAndPassword(auth, inputUsuario, password);
         localStorage.setItem('tipoUsuario', 'admin');
-        navigate('/');
+
+        const hayAdvertencia = await verificarResolucionCAI();
+
+        if (!hayAdvertencia) {
+          navigate('/');
+        }
+        // Si hay advertencia, se muestra el mensaje y no navega automáticamente,
+        // para que el usuario pueda verla antes de avanzar.
       } catch (err) {
         setError('Credenciales inválidas para administrador');
       }
@@ -43,13 +82,22 @@ function Login() {
           const userDoc = res.docs[0];
           const userData = userDoc.data();
 
-          localStorage.setItem('usuario', JSON.stringify({
-            nombre: userData.nombreUsuario,
+          const usuarioLocal = {
+            nombre: userData.username,
             rol: userData.rol
-          }));
+          };
+
+          localStorage.setItem('usuario', JSON.stringify(usuarioLocal));
           localStorage.setItem('tipoUsuario', 'local');
 
-          navigate('/');
+          loginLocal(usuarioLocal);
+
+          const hayAdvertencia = await verificarResolucionCAI();
+
+          if (!hayAdvertencia) {
+            navigate('/');
+          }
+          // Si hay advertencia, no navega para mostrar mensaje
         } else {
           setError('Usuario o contraseña incorrectos');
         }
@@ -98,16 +146,28 @@ function Login() {
             />
           </FormControl>
 
-          <FormControl fullWidth margin="normal">
+          <FormControl fullWidth margin="normal" variant="outlined">
             <InputLabel htmlFor="password-input">Contraseña</InputLabel>
             <OutlinedInput
               id="password-input"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               startAdornment={
                 <InputAdornment position="start">
                   <LockIcon />
+                </InputAdornment>
+              }
+              endAdornment={
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                    size="small"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
                 </InputAdornment>
               }
               label="Contraseña"
@@ -119,6 +179,30 @@ function Login() {
             <Typography color="error" sx={{ mt: 1 }}>
               {error}
             </Typography>
+          )}
+
+          {advertenciaCAI && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: 1,
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffeeba',
+              }}
+            >
+              <Typography variant="body1" color="#856404">
+                {advertenciaCAI}
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                sx={{ mt: 1 }}
+                onClick={() => navigate('/')}
+              >
+                Continuar
+              </Button>
+            </Box>
           )}
 
           <Box display="flex" justifyContent="center" mt={3}>

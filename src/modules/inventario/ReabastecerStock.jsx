@@ -9,7 +9,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 export default function ReabastecerStock() {
-  const { logout } = useAuth();
+
+  const {logout, nombre} = useAuth();
   const navigate = useNavigate();
 
   const [proveedores, setProveedores] = useState([]);
@@ -19,17 +20,13 @@ export default function ReabastecerStock() {
   const [cantidad, setCantidad] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState(() => {
-    // fecha por defecto hoy en formato yyyy-mm-dd para input date
     const hoy = new Date();
     return hoy.toISOString().split('T')[0];
   });
+  const [numeroFactura, setNumeroFactura] = useState('');
+  const [registroCAI, setRegistroCAI] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
 
   useEffect(() => {
     const obtenerDatos = async () => {
@@ -39,12 +36,12 @@ export default function ReabastecerStock() {
 
         setProveedores(provSnap.docs.map((doc) => ({
           id: doc.id,
-          nombre: doc.data().nombre,
+          nombreX: doc.data().nombreX,
         })));
 
         setProductos(prodSnap.docs.map((doc) => ({
           id: doc.id,
-          nombre: doc.data().nombre,
+          nombreY: doc.data().nombreY,
         })));
       } catch (e) {
         console.error('Error al cargar datos:', e);
@@ -53,12 +50,17 @@ export default function ReabastecerStock() {
     obtenerDatos();
   }, []);
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   const handleReabastecer = async (e) => {
     e.preventDefault();
     setError('');
     setMensaje('');
 
-    if (!proveedorSeleccionado || !productoSeleccionado || !cantidad || !descripcion || !fecha) {
+    if (!proveedorSeleccionado || !productoSeleccionado || !cantidad || !descripcion || !fecha || !numeroFactura || !registroCAI) {
       setError('Por favor, complete todos los campos.');
       return;
     }
@@ -69,17 +71,15 @@ export default function ReabastecerStock() {
       return;
     }
 
-    try {
-      // Guardar registro en reabastecerStock
-      await addDoc(collection(db, 'reabastecerStock'), {
-        proveedorId: proveedorSeleccionado,
-        productoId: productoSeleccionado,
-        cantidad: cantidadNumero,
-        descripcion,
-        fecha: new Date(fecha),
-      });
+    // Validar formato Registro CAI
+    const regexCAI = /^[A-Za-z0-9]{6}(-[A-Za-z0-9]{6}){4}-[A-Za-z0-9]{2}$/;
+    if (!regexCAI.test(registroCAI)) {
+      setError('El registro CAI no tiene el formato válido: 000000-000000-000000-000000-000000-00');
+      return;
+    }
 
-      // Actualizar cantidadStock en producto
+    try {
+      // Obtener referencia del producto
       const productoRef = doc(db, 'productos', productoSeleccionado);
       const productoSnap = await getDoc(productoRef);
 
@@ -88,10 +88,30 @@ export default function ReabastecerStock() {
         return;
       }
 
+      // Sumar stock
       const cantidadActual = productoSnap.data().cantidadStock || 0;
       const nuevaCantidad = cantidadActual + cantidadNumero;
 
       await updateDoc(productoRef, { cantidadStock: nuevaCantidad });
+
+      // Obtener fecha/hora actual en Honduras
+      const fechaHoraHonduras = new Date().toLocaleString('es-HN', {
+        timeZone: 'America/Tegucigalpa',
+        hour12: true
+      });
+
+      // Guardar registro completo en la colección 'reabastecimientos'
+      await addDoc(collection(db, 'reabastecimientos'), {
+        proveedorId: proveedorSeleccionado,
+        productoId: productoSeleccionado,
+        cantidad: cantidadNumero,
+        descripcion,
+        fecha: new Date(fecha),  // fecha sin hora (del input)
+        usuario: nombre || 'Desconocido',
+        fechaRegistro: fechaHoraHonduras,  // fecha con hora real en Honduras
+        numeroFactura,
+        registroCAI
+      });
 
       setMensaje('Reabastecimiento exitoso.');
       setCantidad('');
@@ -99,6 +119,8 @@ export default function ReabastecerStock() {
       setProveedorSeleccionado('');
       setProductoSeleccionado('');
       setFecha(new Date().toISOString().split('T')[0]); // reset a hoy
+      setNumeroFactura('');
+      setRegistroCAI('');
     } catch (err) {
       console.error(err);
       setError('Error al reabastecer el stock.');
@@ -110,70 +132,49 @@ export default function ReabastecerStock() {
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div
-            className="offcanvas offcanvas-end custom-offcanvas"
-            tabIndex="-1"
-            id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
-          >
+          </a>
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
+          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar">
             <div className="offcanvas-header">
-              <button
-                type="button"
-                className="btn-close custom-close-btn"
-                data-bs-dismiss="offcanvas"
-                aria-label="Close"
-              ></button>
+              <button className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
+                <li className="nav-item"><Link to="/reportes" className="nav-link menu-link"><i className="fas fa-chart-line me-2"></i> REPORTES</Link></li>
+                <li className="nav-item"><Link to="/facturacion" className="nav-link menu-link"><i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN</Link></li>
+                <li className="nav-item"><Link to="/inventario" className="nav-link menu-link"><i className="fas fa-boxes me-2"></i> INVENTARIO</Link></li>
+                <li className="nav-item"><Link to="/proveedores" className="nav-link menu-link"><i className="fas fa-truck me-2"></i> PROVEEDORES</Link></li>
+                <li className="nav-item"><Link to="/seguridad" className="nav-link menu-link"><i className="fas fa-user-shield me-2"></i> SEGURIDAD</Link></li>
               </ul>
               <div>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger mt-3"
-                  onClick={() => alert('Cerrar sesión')}
-                >
-                  Cerrar Sesión
-                </button>
+                <button className="btn btn-outline-danger mt-3" onClick={handleLogout}>Cerrar Sesión</button>
               </div>
             </div>
           </div>
@@ -208,7 +209,7 @@ export default function ReabastecerStock() {
                   <option value="">Seleccione proveedor</option>
                   {proveedores.map((prov) => (
                     <option key={prov.id} value={prov.id}>
-                      {prov.nombre}
+                      {prov.nombreX}
                     </option>
                   ))}
                 </select>
@@ -229,7 +230,7 @@ export default function ReabastecerStock() {
                   <option value="">Seleccione producto</option>
                   {productos.map((prod) => (
                     <option key={prod.id} value={prod.id}>
-                      {prod.nombre}
+                      {prod.nombreY}
                     </option>
                   ))}
                 </select>
@@ -263,6 +264,38 @@ export default function ReabastecerStock() {
                   className="form-control"
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Número de Factura */}
+              <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="inputNumeroFactura">
+                  Número de Factura
+                </label>
+                <input
+                  id="inputNumeroFactura"
+                  type="text"
+                  className="form-control"
+                  value={numeroFactura}
+                  onChange={(e) => setNumeroFactura(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Registro CAI */}
+              <div className="col-md-6">
+                <label className="form-label fw-semibold" htmlFor="inputRegistroCAI">
+                  Registro CAI
+                </label>
+                <input
+                  id="inputRegistroCAI"
+                  type="text"
+                  className="form-control"
+                  placeholder="000000-000000-000000-000000-000000-00"
+                  value={registroCAI}
+                  onChange={(e) => setRegistroCAI(e.target.value)}
+                  maxLength={41}
                   required
                 />
               </div>

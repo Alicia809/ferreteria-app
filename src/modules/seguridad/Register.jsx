@@ -23,7 +23,7 @@ function Register() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const { logout } = useAuth();
+  const { logout, nombre } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -34,18 +34,34 @@ function Register() {
     e.preventDefault();
 
     try {
+      // Obtener fecha y hora actual en zona horaria Honduras
+      const fechaCreado = new Date().toLocaleString('es-ES', {
+        timeZone: 'America/Tegucigalpa',
+        hour12: false,
+      });
+
       if (rol === 'admin') {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, 'usuarios', cred.user.uid), {
           email,
-          rol
+          rol,
+          nombreCreador: nombre,
+          nombreEditor: nombre,
+          activo: true,
+          fechaCreado,
+          fechaEditado: fechaCreado
         });
       } else {
         const newUserRef = doc(db, 'usuarios', username);
         await setDoc(newUserRef, {
           username,
           password,
-          rol
+          rol,
+          nombreCreador: nombre,
+          nombreEditor: nombre,
+          activo: true,
+          fechaCreado, 
+          fechaEditado: fechaCreado
         });
       }
 
@@ -55,75 +71,55 @@ function Register() {
     }
   };
 
+
   return (
     <>
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div
-            className="offcanvas offcanvas-end custom-offcanvas"
-            tabIndex="-1"
-            id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
-          >
+          </a>
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre  || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
+          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar">
             <div className="offcanvas-header">
-              <button
-                type="button"
-                className="btn-close custom-close-btn"
-                data-bs-dismiss="offcanvas"
-                aria-label="Close"
-              ></button>
+              <button className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
+                <li className="nav-item"><Link to="/reportes" className="nav-link menu-link"><i className="fas fa-chart-line me-2"></i> REPORTES</Link></li>
+                <li className="nav-item"><Link to="/facturacion" className="nav-link menu-link"><i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN</Link></li>
+                <li className="nav-item"><Link to="/inventario" className="nav-link menu-link"><i className="fas fa-boxes me-2"></i> INVENTARIO</Link></li>
+                <li className="nav-item"><Link to="/proveedores" className="nav-link menu-link"><i className="fas fa-truck me-2"></i> PROVEEDORES</Link></li>
+                <li className="nav-item"><Link to="/seguridad" className="nav-link menu-link"><i className="fas fa-user-shield me-2"></i> SEGURIDAD</Link></li>
               </ul>
               <div>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger mt-3"
-                  onClick={handleLogout}
-                >
-                  Cerrar Sesión
-                </button>
+                <button className="btn btn-outline-danger mt-3" onClick={handleLogout}>Cerrar Sesión</button>
               </div>
             </div>
           </div>
@@ -196,12 +192,13 @@ function Register() {
               </Col>
             </Form.Group>
 
-            <Row>
-              <Col sm={{ span: 8, offset: 4 }} className="d-flex justify-content-between">
+            <Row className="mt-3">
+              <Col xs={6} className="d-flex justify-content-start">
                 <Button variant="secondary" onClick={() => navigate('/seguridad')}>
-                  <FaArrowLeft className="me-2" />
                   Regresar
                 </Button>
+              </Col>
+              <Col xs={6} className="d-flex justify-content-end">
                 <Button variant="primary" type="submit">
                   Registrar
                 </Button>

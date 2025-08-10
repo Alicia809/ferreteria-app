@@ -10,9 +10,17 @@ import {
   collection, getDocs, doc, setDoc, updateDoc, deleteDoc
 } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useAuth } from '../../components/AuthContext';
 
 export default function ResolucionCAI() {
   const navigate = useNavigate();
+
+  const {logout,nombre } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const [resoluciones, setResoluciones] = useState([]);
   const [busqueda, setBusqueda] = useState('');
@@ -41,18 +49,58 @@ export default function ResolucionCAI() {
       try {
         const querySnapshot = await getDocs(collection(db, 'resolucionCAI'));
         const resolucionesFirebase = [];
+        let debeDesactivar = null;
+
         querySnapshot.forEach((docSnap, index) => {
+          const data = docSnap.data();
           resolucionesFirebase.push({
             id: index + 1,
-            ...docSnap.data()
+            idDoc: docSnap.id,
+            ...data
           });
         });
+
+        // Revisar si la resolución activa llegó o superó el limite
+        const activa = resolucionesFirebase.find(r => r.activa);
+        if (activa) {
+          const usadasNum = Number(activa.usadas.replace(/-/g, ''));
+          const numeroFinalNum = Number(activa.numero_final.replace(/-/g, ''));
+          if (usadasNum >= numeroFinalNum) {
+            debeDesactivar = activa.idDoc;
+          }
+        }
+
         setResoluciones(resolucionesFirebase);
-        setAlerta({
-          tipo: 'success',
-          mensaje: 'Resolución activada exitosamente.',
-          mostrar: true
-        });
+
+        if (debeDesactivar) {
+          // Desactivar la resolución automáticamente
+          const docRef = doc(db, 'resolucionCAI', debeDesactivar);
+          await updateDoc(docRef, { activa: false });
+
+          setAlerta({
+            tipo: 'warning',
+            mensaje: 'La resolución activa alcanzó el límite y ha sido desactivada automáticamente.',
+            mostrar: true
+          });
+
+          // Actualizar lista de resoluciones luego de desactivar
+          const querySnapshot2 = await getDocs(collection(db, 'resolucionCAI'));
+          const nuevasResoluciones = [];
+          querySnapshot2.forEach((docSnap, index) => {
+            nuevasResoluciones.push({
+              id: index + 1,
+              idDoc: docSnap.id,
+              ...docSnap.data()
+            });
+          });
+          setResoluciones(nuevasResoluciones);
+        } else {
+          setAlerta({
+            tipo: 'success',
+            mensaje: 'Resolución activada exitosamente.',
+            mostrar: true
+          });
+        }
 
       } catch (error) {
         setAlerta({
@@ -60,14 +108,12 @@ export default function ResolucionCAI() {
           mensaje: 'Hubo un error al activar la resolución.',
           mostrar: true
         });
-
       }
     };
 
     obtenerResoluciones();
   }, []);
 
-  const handleLogout = () => navigate('/login');
 
   const formatearInput = (value, tipo) => {
     if (tipo === 'correlativo') {
@@ -161,9 +207,24 @@ export default function ResolucionCAI() {
     try {
       const actual = resoluciones.find(r => r.correlativo === correlativo);
 
+      // Validar usadas < numero_final
+      // Como numero_final y usadas están con formato "xxx-xxx-xx-xxxxxxxx", hay que normalizar a número
+      // Para simplificar, extraemos solo los números, quitamos guiones y convertimos a Number
+      const usadasNum = Number(actual.usadas.replace(/-/g, ''));
+      const numeroFinalNum = Number(actual.numero_final.replace(/-/g, ''));
+
+      if (usadasNum >= numeroFinalNum) {
+        setAlerta({
+          tipo: 'warning',
+          mensaje: 'No se puede activar esta resolución porque ya se usaron todos los números disponibles.',
+          mostrar: true
+        });
+        return;
+      }
+
       // Obtenemos la fecha límite de emisión desde la resolución
       const fechaLimite = new Date(`${actual.fecha_limite_emision}T00:00:00-06:00`);
-      
+
       // Fecha actual en zona horaria de Honduras
       const hoy = new Date();
       const hoyUTC6 = new Date(hoy.toLocaleString('en-US', { timeZone: 'America/Tegucigalpa' }));
@@ -178,7 +239,7 @@ export default function ResolucionCAI() {
         return;
       }
 
-
+      // Actualizar la colección para marcar esta resolución como activa y las demás como inactivas
       const querySnapshot = await getDocs(collection(db, 'resolucionCAI'));
 
       const updates = querySnapshot.docs.map((docSnap) => {
@@ -205,6 +266,7 @@ export default function ResolucionCAI() {
     }
   };
 
+
   const resolucionesFiltradas = resoluciones.filter(r =>
     r.correlativo.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -214,26 +276,50 @@ export default function ResolucionCAI() {
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <a className="navbar-brand d-flex align-items-center gap-2" href="#">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
           </a>
-          <button className="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="offcanvas offcanvas-end" tabIndex="-1" id="offcanvasNavbar">
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre  || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
+          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar">
             <div className="offcanvas-header">
-              <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+              <button className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item"><Link to="/reportes" className="nav-link"><i className="fas fa-chart-line me-2" />REPORTES</Link></li>
-                <li className="nav-item"><Link to="/facturacion" className="nav-link"><i className="fas fa-file-invoice-dollar me-2" />FACTURACIÓN</Link></li>
-                <li className="nav-item"><Link to="/inventario" className="nav-link"><i className="fas fa-boxes me-2" />INVENTARIO</Link></li>
-                <li className="nav-item"><Link to="/proveedores" className="nav-link"><i className="fas fa-truck me-2" />PROVEEDORES</Link></li>
-                <li className="nav-item"><Link to="/seguridad" className="nav-link"><i className="fas fa-user-shield me-2" />SEGURIDAD</Link></li>
+                <li className="nav-item"><Link to="/reportes" className="nav-link menu-link"><i className="fas fa-chart-line me-2"></i> REPORTES</Link></li>
+                <li className="nav-item"><Link to="/facturacion" className="nav-link menu-link"><i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN</Link></li>
+                <li className="nav-item"><Link to="/inventario" className="nav-link menu-link"><i className="fas fa-boxes me-2"></i> INVENTARIO</Link></li>
+                <li className="nav-item"><Link to="/proveedores" className="nav-link menu-link"><i className="fas fa-truck me-2"></i> PROVEEDORES</Link></li>
+                <li className="nav-item"><Link to="/seguridad" className="nav-link menu-link"><i className="fas fa-user-shield me-2"></i> SEGURIDAD</Link></li>
               </ul>
-              <Button variant="outline-danger" className="mt-3" onClick={handleLogout}>Cerrar Sesión</Button>
+              <div>
+                <button className="btn btn-outline-danger mt-3" onClick={handleLogout}>Cerrar Sesión</button>
+              </div>
             </div>
           </div>
         </div>
@@ -277,7 +363,7 @@ export default function ResolucionCAI() {
               <th>Utilizadas</th>
               <th>Activa</th>
               <th>Seleccionar</th>
-              <th>Eliminar</th>
+              {/* <th>Eliminar</th> */}
             </tr>
           </thead>
           <tbody>
@@ -301,7 +387,7 @@ export default function ResolucionCAI() {
                     {r.activa ? "Activa" : "Activar"}
                   </Button>
                 </td>
-                <td>
+                {/* <td>
                   <Button
                     variant="outline-danger"
                     size="sm"
@@ -309,7 +395,7 @@ export default function ResolucionCAI() {
                   >
                     Eliminar
                   </Button>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>
@@ -392,24 +478,24 @@ export default function ResolucionCAI() {
         </Modal.Footer>
       </Modal>
       <Modal show={confirmacion.mostrar} onHide={() => setConfirmacion({ mostrar: false, correlativo: null })}>
-      <Modal.Header closeButton>
-        <Modal.Title>Confirmar Eliminación</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        ¿Estás seguro de que deseas eliminar esta resolución?
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={() => setConfirmacion({ mostrar: false, correlativo: null })}>
-          Cancelar
-        </Button>
-        <Button
-          variant="danger"
-          onClick={() => eliminarResolucion(confirmacion.correlativo)}
-        >
-          Eliminar
-        </Button>
-      </Modal.Footer>
-    </Modal>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirmar Eliminación</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          ¿Estás seguro de que deseas eliminar esta resolución?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setConfirmacion({ mostrar: false, correlativo: null })}>
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => eliminarResolucion(confirmacion.correlativo)}
+          >
+            Eliminar
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

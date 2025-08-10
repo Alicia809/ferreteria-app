@@ -1,13 +1,37 @@
 // src/pages/AjusteManual.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../components/AuthContext';
+import { collection, getDocs, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 export default function ActualizacionAjusteManual() {
-  const [producto, setProducto] = useState('');
+  const [productos, setProductos] = useState([]);
+  const [productoId, setProductoId] = useState('');
   const [cantidad, setCantidad] = useState('');
   const [fecha, setFecha] = useState('');
   const [observacion, setObservacion] = useState('');
   const navigate = useNavigate();
+  const { logout, nombre } = useAuth();
+
+  useEffect(() => {
+    async function fetchProductos() {
+      const productosCol = collection(db, 'productos');
+      const productosSnapshot = await getDocs(productosCol);
+      const productosList = productosSnapshot.docs.map(doc => ({
+        id: doc.id,
+        nombre: doc.data().nombreY || doc.data().nombre || 'Sin nombre',
+        cantidadStock: doc.data().cantidadStock || 0,
+      }));
+      setProductos(productosList);
+    }
+    fetchProductos();
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const handleCantidadChange = (e) => {
     const val = e.target.value;
@@ -16,16 +40,82 @@ export default function ActualizacionAjusteManual() {
     if (!isNaN(num) && num >= 1) setCantidad(num);
   };
 
-  const handleSubmit = (e) => {
+  const limpiarFormulario = () => {
+    setProductoId('');
+    setCantidad('');
+    setFecha('');
+    setObservacion('');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!productoId) {
+      alert('Por favor selecciona un producto');
+      return;
+    }
+
     if (cantidad === '' || cantidad < 1) {
       alert('Por favor ingrese una cantidad válida (mayor o igual a 1).');
       return;
     }
 
-    console.log({ producto, cantidad, fecha, observacion });
-    alert('Formulario enviado con éxito');
-    navigate('/actualizacion-manual');
+    if (!fecha) {
+      alert('Por favor ingrese una fecha válida');
+      return;
+    }
+
+    if (!observacion.trim()) {
+      alert('Por favor ingrese una observación');
+      return;
+    }
+
+    try {
+      // Obtener el producto seleccionado de Firestore para obtener cantidadStock actual
+      const productoRef = doc(db, 'productos', productoId);
+      const productoSnap = await getDoc(productoRef);
+
+      if (!productoSnap.exists()) {
+        alert('Producto no encontrado en la base de datos.');
+        return;
+      }
+
+      const productoData = productoSnap.data();
+      const stockActual = productoData.cantidadStock || 0;
+
+      if (cantidad > stockActual) {
+        alert(`No se puede descontar más que el stock actual (${stockActual}).`);
+        return;
+      }
+
+      // Descontar cantidad del stock
+      const nuevoStock = stockActual - cantidad;
+      await updateDoc(productoRef, { cantidadStock: nuevoStock });
+
+      // Guardar el ajuste manual en la colección ajustesManuales
+      const fechaHoraHonduras = new Date().toLocaleString('es-HN', {
+        timeZone: 'America/Tegucigalpa',
+        hour12: false
+      });
+
+      const ajusteData = {
+        productoId,
+        productoNombre: productoData.nombreY || productoData.nombre || 'Desconocido',
+        cantidadDescontada: cantidad,
+        fecha,
+        observacion,
+        usuarioEncargado: nombre,
+        fechaRegistradoP: fechaHoraHonduras,
+      };
+
+      await addDoc(collection(db, 'ajustesManuales'), ajusteData);
+
+      alert('Ajuste manual guardado exitosamente y stock actualizado.');
+      limpiarFormulario();
+    } catch (error) {
+      console.error('Error al guardar ajuste manual o actualizar stock:', error);
+      alert('Hubo un error al guardar el ajuste manual o actualizar el stock.');
+    }
   };
 
   return (
@@ -33,29 +123,42 @@ export default function ActualizacionAjusteManual() {
       {/* NAVBAR */}
       <nav className="navbar bg-body-tertiary fixed-top">
         <div className="container-fluid">
-          <Link className="navbar-brand d-flex align-items-center gap-2" to="/">
+          {/* Logo */}
+          <a className="navbar-brand d-flex align-items-center gap-2">
             <img src="/Logo.png" alt="Logo" height="60" />
             <span>Comercial Mateo</span>
-          </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            aria-label="Toggle navigation"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
+          </a>
+
+          {/* Usuario + Botón Sidebar */}
+          <div className="d-flex align-items-center gap-4">
+            <span>{nombre || 'Usuario'}</span>
+            <img
+              src="/avatar.png"
+              alt="Avatar"
+              className="rounded-circle"
+              height="40"
+              width="40"
+            />
+
+            {/* Botón del sidebar */}
+            <button
+              className="navbar-toggler"
+              type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasNavbar"
+              aria-controls="offcanvasNavbar"
+              aria-label="Toggle navigation"
+            >
+              <span className="navbar-toggler-icon"></span>
+            </button>
+          </div>
           <div
             className="offcanvas offcanvas-end custom-offcanvas"
             tabIndex="-1"
             id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
           >
             <div className="offcanvas-header">
               <button
-                type="button"
                 className="btn-close custom-close-btn"
                 data-bs-dismiss="offcanvas"
                 aria-label="Close"
@@ -91,9 +194,8 @@ export default function ActualizacionAjusteManual() {
               </ul>
               <div>
                 <button
-                  type="button"
                   className="btn btn-outline-danger mt-3"
-                  onClick={() => alert('Cerrar sesión')}
+                  onClick={handleLogout}
                 >
                   Cerrar Sesión
                 </button>
@@ -103,6 +205,7 @@ export default function ActualizacionAjusteManual() {
         </div>
       </nav>
 
+      {/* FORMULARIO */}
       <div className="container pt-5 mt-5">
         <div className="card shadow-lg p-4">
           <h4 className="text-warning mb-4 fw-bold">Formulario: Ajuste Manual</h4>
@@ -110,26 +213,63 @@ export default function ActualizacionAjusteManual() {
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Producto</label>
-                <input type="text" className="form-control" value={producto} onChange={(e) => setProducto(e.target.value)} required />
+                <select
+                  className="form-select"
+                  value={productoId}
+                  onChange={(e) => setProductoId(e.target.value)}
+                  required
+                >
+                  <option value="">Selecciona un producto</option>
+                  {productos.map((prod) => (
+                    <option key={prod.id} value={prod.id}>
+                      {prod.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="col-md-6">
+              <div className="col-md-3">
                 <label className="form-label fw-semibold">Cantidad a descontar</label>
-                <input type="number" className="form-control" value={cantidad} onChange={handleCantidadChange} required min={1} />
+                <input
+                  type="number"
+                  className="form-control"
+                  value={cantidad}
+                  onChange={handleCantidadChange}
+                  required
+                  min={1}
+                />
               </div>
-              <div className="col-md-6">
+              <div className="col-md-3">
                 <label className="form-label fw-semibold">Fecha</label>
-                <input type="date" className="form-control" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                <input
+                  type="date"
+                  className="form-control"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  required
+                />
               </div>
               <div className="col-12">
                 <label className="form-label fw-semibold">Observación</label>
-                <textarea className="form-control" rows="3" value={observacion} onChange={(e) => setObservacion(e.target.value)} required />
+                <textarea
+                  className="form-control"
+                  rows="3"
+                  value={observacion}
+                  onChange={(e) => setObservacion(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div className="d-flex justify-content-between mt-4">
-              <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/inventario/actualizacion')}>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => navigate('/inventario/actualizacion')}
+              >
                 <i className="bi bi-arrow-left me-2"></i> Volver
               </button>
-              <button type="submit" className="btn btn-warning">Guardar Ajuste</button>
+              <button type="submit" className="btn btn-warning">
+                Guardar Ajuste
+              </button>
             </div>
           </form>
         </div>

@@ -1,3 +1,4 @@
+// src/pages/ListadoAjustes.js
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../App.css';
@@ -8,42 +9,42 @@ import { useAuth } from '../../components/AuthContext';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export default function Productos() {
+export default function ListadoAjustes() {
+  const { logout, nombre } = useAuth();
+  const navigate = useNavigate();
 
-  const {logout,nombre } = useAuth();
+  const [ajustes, setAjustes] = useState([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [ajustesFiltrados, setAjustesFiltrados] = useState([]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  const navigate = useNavigate();
-
-  const [productos, setProductos] = useState([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [productosFiltrados, setProductosFiltrados] = useState([]);
-
   useEffect(() => {
-    const fetchProductos = async () => {
+    const fetchAjustes = async () => {
       try {
-        const productosSnapshot = await getDocs(collection(db, 'productos'));
-        const listaProductos = productosSnapshot.docs.map(doc => doc.data());
-        setProductos(listaProductos);
-        setProductosFiltrados(listaProductos); // inicializar
+        const snapshot = await getDocs(collection(db, 'ajustesManuales'));
+        const listaAjustes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAjustes(listaAjustes);
+        setAjustesFiltrados(listaAjustes);
       } catch (error) {
-        console.error('Error al obtener productos:', error);
+        console.error('Error al obtener ajustes manuales:', error);
       }
     };
-    fetchProductos();
+    fetchAjustes();
   }, []);
 
   useEffect(() => {
-    const resultado = productos.filter(p =>
-      p.nombreY?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.id?.toLowerCase().includes(busqueda.toLowerCase())
+    const filtro = ajustes.filter(a =>
+      (a.productoNombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+       a.usuarioEncargado?.toLowerCase().includes(busqueda.toLowerCase()) ||
+       a.fecha?.toLowerCase().includes(busqueda.toLowerCase()) ||
+       a.observacion?.toLowerCase().includes(busqueda.toLowerCase()))
     );
-    setProductosFiltrados(resultado);
-  }, [busqueda, productos]);
+    setAjustesFiltrados(filtro);
+  }, [busqueda, ajustes]);
 
   return (
     <div className="d-flex flex-column vh-100 overflow-hidden">
@@ -58,7 +59,7 @@ export default function Productos() {
 
           {/* Usuario + Botón Sidebar */}
           <div className="d-flex align-items-center gap-4">
-            <span>{nombre  || 'Usuario'}</span>
+            <span>{nombre || 'Usuario'}</span>
             <img
               src="/avatar.png"
               alt="Avatar"
@@ -100,54 +101,52 @@ export default function Productos() {
       </nav>
 
       {/* CONTENIDO */}
-      <div className="flex-grow-1 d-flex flex-column align-items-center pt-5" style={{ marginTop: '80px', padding: '2rem', overflowY: 'auto' }}>
-        {/* <h1 className="text-center mb-4 text-primary">Listado de Productos</h1> */}
+      <div className="flex-grow-1 d-flex flex-column align-items-center pt-5" style={{ marginTop: '80px', padding: '2rem', overflowY: 'auto', width: '100%' }}>
+        <h2 className="text-center mb-4 text-primary fw-bold">
+          <i className="bi bi-list-ul me-2"></i> Listado de Ajustes Manuales
+        </h2>
 
         {/* Buscador */}
-        <div className="input-group mb-4" style={{ maxWidth: '600px' }}>
+        <div className="input-group mb-4" style={{ maxWidth: '700px' }}>
           <span className="input-group-text"><i className="fas fa-search"></i></span>
           <input
             type="text"
             className="form-control"
-            placeholder="Buscar por nombre o ID..."
+            placeholder="Buscar por producto, usuario, fecha u observación..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
         </div>
 
-        {/* Tabla de productos */}
+        {/* Tabla */}
         <div className="table-responsive" style={{ maxHeight: '65vh', width: '100%' }}>
           <table className="table table-hover table-striped table-bordered">
             <thead className="table-primary text-center">
               <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Categoria</th>
-                <th>Proveedor</th>
-                <th>Stock</th>
-                <th>Precio Venta</th>
-                <th>Tipo Unidad Venta</th>
-                <th>Unidad Medida Venta</th>
+                <th>Producto</th>
+                <th>Cantidad Descontada</th>
+                <th>Fecha Ajuste</th>
+                <th>Observación</th>
+                <th>Usuario Encargado</th>
+                <th>Fecha Registro</th>
               </tr>
             </thead>
             <tbody>
-              {productosFiltrados.length > 0 ? (
-                productosFiltrados.map((producto) => (
-                  <tr key={producto.id}>
-                    <td>{producto.id}</td>
-                    <td>{producto.nombreY}</td>
-                    <td>{producto.categoria}</td>
-                    <td>{producto.proveedorId}</td>
-                    <td>{producto.cantidadStock}</td>
-                    <td>L {producto.precioVenta?.toFixed(2)}</td>
-                    <td>{producto.tipoUnidadVenta}</td>
-                    <td>{producto.unidadMedidaVenta}</td>
+              {ajustesFiltrados.length > 0 ? (
+                ajustesFiltrados.map((ajuste) => (
+                  <tr key={ajuste.id}>
+                    <td>{ajuste.productoNombre}</td>
+                    <td className="text-center">{ajuste.cantidadDescontada}</td>
+                    <td className="text-center">{ajuste.fecha}</td>
+                    <td>{ajuste.observacion}</td>
+                    <td>{ajuste.usuarioEncargado}</td>
+                    <td>{ajuste.fechaRegistradoP}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan="6" className="text-center text-muted">
-                    No se encontraron productos.
+                    No se encontraron ajustes.
                   </td>
                 </tr>
               )}
@@ -155,8 +154,8 @@ export default function Productos() {
           </table>
         </div>
 
-        <Link to="/inventario" className="btn btn-secondary mt-4">
-          <i className="bi bi-arrow-left me-1"></i> Volver al Inventario
+        <Link to="/inventario/actualizacion" className="btn btn-secondary mt-4">
+          <i className="bi bi-arrow-left me-1"></i> Volver a Actualización Manual
         </Link>
       </div>
     </div>
