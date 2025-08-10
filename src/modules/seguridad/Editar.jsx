@@ -19,7 +19,7 @@ function EditLocalUser() {
   const [nombreCreador, setNombreCreador] = useState('');
 
 
-  const { logout, nombre } = useAuth();
+  const { logout, nombre} = useAuth();
   const navigate = useNavigate();
   const [activo, setActivo] = useState(true);
 
@@ -189,56 +189,30 @@ function EditLocalUser() {
               <span className="navbar-toggler-icon"></span>
             </button>
           </div>
-          <div
-            className="offcanvas offcanvas-end custom-offcanvas"
-            tabIndex="-1"
-            id="offcanvasNavbar"
-            aria-labelledby="offcanvasNavbarLabel"
-          >
+          <div className="offcanvas offcanvas-end custom-offcanvas" tabIndex="-1" id="offcanvasNavbar">
             <div className="offcanvas-header">
-              <button
-                type="button"
-                className="btn-close custom-close-btn"
-                data-bs-dismiss="offcanvas"
-                aria-label="Close"
-              ></button>
+              <button className="btn-close custom-close-btn" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div className="offcanvas-body">
               <ul className="navbar-nav justify-content-end flex-grow-1 pe-3">
-                <li className="nav-item">
-                  <Link to="/reportes" className="nav-link menu-link">
-                    <i className="fas fa-chart-line me-2"></i> REPORTES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/facturacion" className="nav-link menu-link">
-                    <i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/inventario" className="nav-link menu-link">
-                    <i className="fas fa-boxes me-2"></i> INVENTARIO
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/proveedores" className="nav-link menu-link">
-                    <i className="fas fa-truck me-2"></i> PROVEEDORES
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link to="/seguridad" className="nav-link menu-link">
-                    <i className="fas fa-user-shield me-2"></i> SEGURIDAD
-                  </Link>
-                </li>
+                {(rol === 'admin' || rol === 'ventas' || rol === 'bodega')&&(
+                  <li className="nav-item"><Link to="/reportes" className="nav-link menu-link"><i className="fas fa-chart-line me-2"></i> REPORTES</Link></li>
+                )}
+                {(rol === 'admin' || rol === 'ventas')&&(
+                  <li className="nav-item"><Link to="/facturacion" className="nav-link menu-link"><i className="fas fa-file-invoice-dollar me-2"></i> FACTURACIÓN</Link></li>
+                )}
+                {(rol === 'admin' || rol === 'bodega')&&(
+                  <li className="nav-item"><Link to="/inventario" className="nav-link menu-link"><i className="fas fa-boxes me-2"></i> INVENTARIO</Link></li>
+                )}
+                {(rol === 'admin' || rol === 'bodega')&&(
+                  <li className="nav-item"><Link to="/proveedores" className="nav-link menu-link"><i className="fas fa-truck me-2"></i> PROVEEDORES</Link></li>
+                )}
+                {(rol === 'admin' || rol === 'ventas' || rol === 'bodega')&&(
+                  <li className="nav-item"><Link to="/seguridad" className="nav-link menu-link"><i className="fas fa-user-shield me-2"></i> SEGURIDAD</Link></li>
+                )}
               </ul>
               <div>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger mt-3"
-                  onClick={handleLogout}
-                >
-                  Cerrar Sesión
-                </button>
+                <button className="btn btn-outline-danger mt-3" onClick={handleLogout}>Cerrar Sesión</button>
               </div>
             </div>
           </div>

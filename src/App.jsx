@@ -1,13 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './components/AuthContext';
 import RutaProtegida from './components/RutaProtegida';
+import RutaProtegidaRol from './components/RutaProtegidaRol';
 import Productos from './modules/inventario/Productos';
 import Proveedores from './modules/proveedor/Proveedores';
 import Inventario from './modules/inventario/Inventario';
 import Facturacion from './modules/facturacion/Facturacion';
 import RegistroFacturas from './modules/facturacion/RegistroFacturas';
 import FacturaCliente from './modules/facturacion/FacturaCliente';
-import FacturaDevolucion from './modules/facturacion/FacturaDevolucion';
 import ResolucionCAI from './modules/facturacion/ResolucionCAI';
 import ImpuestosDescuentos from './modules/facturacion/ImpuestosDescuentos';
 import Reportes from './modules/reportes/Reportes';
@@ -41,176 +41,175 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          {/* INICIO */}
           <Route path="/login" element={<Login />} />
           <Route path="/" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <Home />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
+
+          {/* SEGURIDAD */}
           <Route path="/seguridad" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <CrudSeguridad />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/register" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['admin']}>
               <Register />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/eliminar" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['admin']}>
               <Eliminar />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/editar" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <Editar />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/mostrar" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <Mostrar />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
 
-
+          {/* PROVEEDORES */}
+          <Route path="/proveedores" element={
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
+              <Proveedores />
+            </RutaProtegidaRol>
+          } />  
           <Route path="/registerProveedor" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <RegisterProveedor />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/eliminarProveedor" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <EliminarProveedor />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/editarProveedor" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <EditarProveedor />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/mostrarProveedor" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <MostrarProveedor />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
+
+          {/* INVENTARIO */}
           <Route path="/inventario" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega','admin']}>
               <Inventario />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/productos" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <Productos />
-            </RutaProtegida>
-          } />
-          <Route path="/proveedores" element={
-            <RutaProtegida>
-              <Proveedores />
-            </RutaProtegida>
-          } />
-          
-
-
+            </RutaProtegidaRol>
+          } />        
           <Route path="/inventario/nuevo" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <NuevoProducto />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/inventario/actualizacion" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <ActualizacionManual />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/inventario/actualizacion/ajuste" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <ActualizacionAjusteManual />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/inventario/actualizacion/ajustesRealizados" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <ListadoAjustes />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/inventario/actualizacion/compra" element={
-            <RutaProtegida>
+            <RutaProtegidaRol  rolesPermitidos={['bodega', 'admin']}>
               <ActualizacionDevolucionCompra />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/inventario/actualizacion/venta" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <ActualizacionDevolucionVenta />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/inventario/reabastecer" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <ReabastecerStock />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/inventario/reabastecer/historialStocks" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'admin']}>
               <ListadoReabastecimientos />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
 
-
-
+          {/* FACTURACIÓN */}
           <Route path="/facturacion" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['ventas', 'admin']}>
               <Facturacion />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/facturacion/registro" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['ventas', 'admin']}>
               <RegistroFacturas />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/facturacion/cliente" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['ventas', 'admin']}>
               <FacturaCliente />
-            </RutaProtegida>
-          } />
-          <Route path="/facturacion/devolucion" element={
-            <RutaProtegida>
-              <FacturaDevolucion />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/facturacion/resolucionCai" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['ventas', 'admin']}>
               <ResolucionCAI />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/facturacion/impuestosDescuentos" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['ventas', 'admin']}>
               <ImpuestosDescuentos />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
 
+          {/* REPORTES */}
           <Route path="/reportes" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <Reportes />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/reportes/ventas" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <ReportesVentas />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/reportes/inventario" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <ReportesInventario />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/reportes/productos" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <ReportesProductos />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
           <Route path="/reportes/compras" element={
-            <RutaProtegida>
+            <RutaProtegidaRol rolesPermitidos={['bodega', 'ventas', 'admin']}>
               <ReportesCompras />
-            </RutaProtegida>
+            </RutaProtegidaRol>
           } />
+
+          {/* PAGINA DE ERROR */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

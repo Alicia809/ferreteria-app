@@ -60,6 +60,12 @@ export function AuthProvider({ children }) {
         ? usuario.datos.email
         : usuario?.tipo === 'local'
         ? usuario.datos.nombre
+        : null,
+    rol:
+      usuario?.tipo === 'admin'
+        ? 'admin'
+        : usuario?.tipo === 'local'
+        ? usuario.datos.rol // 'bodega' o 'ventas'
         : null
   };
 
