@@ -28,6 +28,10 @@ import ActualizacionDevolucionVenta from './modules/inventario/ActualizacionDevo
 import ReabastecerStock from './modules/inventario/ReabastecerStock';
 import NotFound from './NotFound';
 import Home from './Home';
+import ReportesVentas from './modules/reportes/ReportesVentas.jsx';
+import ReportesInventario from "./modules/reportes/ReportesInventario.jsx";
+import ReportesProductos from "./modules/reportes/ReportesProductos.jsx";
+import ReportesCompras from "./modules/reportes/ReportesCompras.jsx";
 
 function App() {
   return (
@@ -170,6 +174,12 @@ function App() {
             </RutaProtegida>
           } />
           <Route path="*" element={<NotFound />} />
+
+          <Route path="/reportes" element={<Reportes />} />
+          <Route path="/reportes/ventas" element={<ReportesVentas />} />
+          <Route path="/reportes/inventario" element={<ReportesInventario />} />
+          <Route path="/reportes/productos" element={<ReportesProductos />} />
+          <Route path="/reportes/compras" element={<ReportesCompras />} />
         </Routes>
       </Router>
     </AuthProvider>
