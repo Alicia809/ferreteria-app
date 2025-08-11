@@ -207,11 +207,14 @@ export default function ResolucionCAI() {
     try {
       const actual = resoluciones.find(r => r.correlativo === correlativo);
 
-      // Validar usadas < numero_final
-      // Como numero_final y usadas están con formato "xxx-xxx-xx-xxxxxxxx", hay que normalizar a número
-      // Para simplificar, extraemos solo los números, quitamos guiones y convertimos a Number
-      const usadasNum = Number(actual.usadas.replace(/-/g, ''));
-      const numeroFinalNum = Number(actual.numero_final.replace(/-/g, ''));
+      // Extraer solo el último bloque numérico (después del último "-")
+      const getUltimoNumero = (cadena) => {
+        const partes = cadena.split("-");
+        return Number(partes[partes.length - 1]);
+      };
+
+      const usadasNum = getUltimoNumero(actual.usadas);
+      const numeroFinalNum = getUltimoNumero(actual.numero_final);
 
       if (usadasNum >= numeroFinalNum) {
         setAlerta({
@@ -222,14 +225,11 @@ export default function ResolucionCAI() {
         return;
       }
 
-      // Obtenemos la fecha límite de emisión desde la resolución
+      // Validar fecha límite
       const fechaLimite = new Date(`${actual.fecha_limite_emision}T00:00:00-06:00`);
-
-      // Fecha actual en zona horaria de Honduras
       const hoy = new Date();
       const hoyUTC6 = new Date(hoy.toLocaleString('en-US', { timeZone: 'America/Tegucigalpa' }));
 
-      // Validamos que la fecha actual NO sea posterior a la fecha límite
       if (hoyUTC6 > fechaLimite) {
         setAlerta({
           tipo: 'warning',
@@ -239,9 +239,8 @@ export default function ResolucionCAI() {
         return;
       }
 
-      // Actualizar la colección para marcar esta resolución como activa y las demás como inactivas
+      // Marcar esta como activa y las demás como inactivas
       const querySnapshot = await getDocs(collection(db, 'resolucionCAI'));
-
       const updates = querySnapshot.docs.map((docSnap) => {
         const docRef = doc(db, 'resolucionCAI', docSnap.id);
         const esActiva = docSnap.id === correlativo;
@@ -250,7 +249,7 @@ export default function ResolucionCAI() {
 
       await Promise.all(updates);
 
-      // Refrescamos resoluciones
+      // Refrescar resoluciones
       const querySnapshot2 = await getDocs(collection(db, 'resolucionCAI'));
       const nuevasResoluciones = [];
       querySnapshot2.forEach((docSnap, index) => {
@@ -260,11 +259,13 @@ export default function ResolucionCAI() {
         });
       });
       setResoluciones(nuevasResoluciones);
+
     } catch (error) {
       console.error('Error al actualizar resolución activa:', error);
       alert('Hubo un error al activar la resolución.');
     }
   };
+
 
 
   const resolucionesFiltradas = resoluciones.filter(r =>
@@ -381,8 +382,8 @@ export default function ResolucionCAI() {
               <tr key={r.id}>
                 <td>{idx + 1}</td>
                 <td>{r.correlativo}</td>
-                <td>{formatearFecha(r.fecha_recepcion)}</td>
-                <td>{formatearFecha(r.fecha_limite_emision)}</td>
+                <td>{r.fecha_recepcion}</td>
+                <td>{r.fecha_limite_emision}</td>
                 <td>{r.numero_inicial}</td>
                 <td>{r.numero_final}</td>
                 <td>{r.usadas}</td>

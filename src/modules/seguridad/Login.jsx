@@ -82,6 +82,12 @@ function Login() {
           const userDoc = res.docs[0];
           const userData = userDoc.data();
 
+          //Verificar si el usuario está activo
+          if (userData.activo !== true) {
+            setError('El usuario no está activo.');
+            return; // no continuar con el login
+          }
+
           const usuarioLocal = {
             nombre: userData.username,
             rol: userData.rol

@@ -187,7 +187,7 @@ export default function ListadoReabastecimientos() {
                 <th>Registro CAI</th>
                 <th>Descripción</th>
                 <th>Usuario</th>
-                <th>Fecha Registro</th>
+                {/* <th>Fecha Registro</th> */}
               </tr>
             </thead>
             <tbody>
@@ -202,7 +202,7 @@ export default function ListadoReabastecimientos() {
                     <td>{item.registroCAI}</td>
                     <td>{item.descripcion}</td>
                     <td>{item.usuario}</td>
-                    <td>{item.fechaRegistro}</td>
+                    {/* <td>{item.fechaRegistro}</td> */}
                   </tr>
                 ))
               ) : (

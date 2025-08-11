@@ -80,10 +80,29 @@ export default function NotFound() {
         </div>
       </nav>
 
-      {/* CONTENIDO CENTRADO */}
-      <div className="flex-grow-1 d-flex justify-content-center align-items-center" style={{ marginTop: '80px' }}>
-        <h1 className="text-center">La ruta a la que deseas acceder no está disponible en este momento :( </h1>
-      </div>
+      <div 
+        className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center" 
+        style={{ marginTop: '80px', padding: '20px' }}
+      >
+        <img 
+          src="/page-unavailable.png" 
+          alt="Página no disponible" 
+          style={{ width: '200px', marginBottom: '20px' }}
+        />
+
+        <h1 className="fw-bold">🚫 Página No Disponible</h1>
+
+        <p className="mt-3 text-muted" style={{ maxWidth: '500px' }}>
+          La página a la que intentas acceder no está disponible en este momento.  
+          Verifica la dirección o regresa a una sección disponible.
+        </p>
+
+        <div className="d-flex gap-3 mt-4">
+          <button className="btn btn-primary" onClick={() => navigate('/')}>
+            <i className="fas fa-home me-2"></i> Volver al Inicio
+          </button>
+        </div>
+      </div>      
     </div>
   );
 }

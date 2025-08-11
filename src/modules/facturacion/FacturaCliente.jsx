@@ -200,7 +200,7 @@ export default function FacturaCliente() {
       // Obtener el número de factura actual y calcular el siguiente
       const partesNumeroFactura = resolucionActiva.usadas.split('-'); // Dividir el número de factura en partes
       const numeroActual = parseInt(partesNumeroFactura[3]); // Obtener la última parte numérica
-      const nuevoNumero = (numeroActual + 1).toString().padStart(9, '0'); // Incrementar y formatear con ceros a la izquierda
+      const nuevoNumero = (numeroActual + 1).toString().padStart(8, '0'); // Incrementar y formatear con ceros a la izquierda
       const nuevoNumeroFactura = `${partesNumeroFactura[0]}-${partesNumeroFactura[1]}-${partesNumeroFactura[2]}-${nuevoNumero}`; // Reconstruir el número de factura
 
       const subtotal = facturaProductos.reduce((sum, p) => sum + p.monto, 0);
@@ -924,9 +924,7 @@ export default function FacturaCliente() {
         </p>
         <p style={{ margin: "2px 0" }}>
           Fecha Límite Emisión:{" "}
-          {resolucionActiva?.fecha_limite_emision
-            ? new Date(resolucionActiva.fecha_limite_emision).toLocaleDateString("es-HN")
-            : "N/A"}
+          {resolucionActiva?.fecha_limite_emision || "N/A"}
         </p>
       </div>
 

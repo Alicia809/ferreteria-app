@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthContext';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 export default function ActualizacionDevolucionVenta() {
@@ -80,32 +80,58 @@ export default function ActualizacionDevolucionVenta() {
 
     const productoSeleccionado = productos.find(p => p.id === productoId);
 
-    const fechaHoraHonduras = new Date().toLocaleString('es-HN', {
-      timeZone: 'America/Tegucigalpa',
-      hour12: false
-    });
-
-    const devolucionData = {
-      productoId,
-      productoNombre: productoSeleccionado ? productoSeleccionado.nombre : 'Desconocido',
-      cantidad,
-      nuevaFactura,
-      facturaAnterior,
-      fecha,
-      motivo,
-      usuarioEncargado: nombre,
-      fechaRegistradoP: fechaHoraHonduras,
-    };
-
     try {
+      // Obtener producto actual
+      const productoRef = doc(db, 'productos', productoId);
+      const productoSnap = await getDoc(productoRef);
+
+      if (!productoSnap.exists()) {
+        alert('Producto no encontrado en la base de datos.');
+        return;
+      }
+
+      // Stock actual
+      const stockActual = productoSnap.data().cantidadStock || 0;
+
+      // Restar la cantidad devuelta
+      const nuevoStock = stockActual - cantidad;
+
+      if (nuevoStock < 0) {
+        alert('La cantidad a devolver excede el stock disponible.');
+        return;
+      }
+
+      await updateDoc(productoRef, { cantidadStock: nuevoStock });
+
+      // Fecha y hora Honduras
+      const fechaHoraHonduras = new Date().toLocaleString('es-HN', {
+        timeZone: 'America/Tegucigalpa',
+        hour12: false
+      });
+
+      // Guardar registro de la devolución
+      const devolucionData = {
+        productoId,
+        productoNombre: productoSeleccionado ? productoSeleccionado.nombre : 'Desconocido',
+        cantidad,
+        nuevaFactura,
+        facturaAnterior,
+        fecha,
+        motivo,
+        usuarioEncargado: nombre,
+        fechaRegistradoP: fechaHoraHonduras,
+      };
+
       await addDoc(collection(db, 'productosDevolucionVenta'), devolucionData);
-      alert('Devolución de venta guardada exitosamente');
+
+      alert('Devolución de venta guardada y stock actualizado correctamente.');
       limpiarFormulario();
     } catch (error) {
-      console.error('Error al guardar la devolución de venta:', error);
-      alert('Hubo un error al guardar la devolución de venta');
+      console.error('Error al procesar la devolución:', error);
+      alert('Hubo un error al procesar la devolución.');
     }
   };
+
 
   return (
     <>
