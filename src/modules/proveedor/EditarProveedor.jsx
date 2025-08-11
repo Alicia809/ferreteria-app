@@ -213,152 +213,180 @@ function EditProveedor() {
       </nav>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="container min-vh-100 d-flex justify-content-center align-items-center" 
-      style={{ paddingTop: '100px' }}>
-        <div className="card p-4 shadow-lg" style={{ width: '700px' }}>
-          <h4 className="text-center mb-4">Editar Proveedor</h4>
+      <div className="scroll-container"
+        style={{
+          maxHeight: '100vh',
+          overflowY: 'auto',
+          padding: '2rem',
+          maxWidth: '1200px',
+          width: '100%',
+        }}
+      >
+        <div className="container min-vh-100 d-flex justify-content-center align-items-center" 
+        style={{ paddingTop: '100px' }}>
+          <div className="card p-4 shadow-lg" style={{ width: '700px' }}>
+            <h4 className="text-center mb-4">Editar Proveedor</h4>
 
-          {error && <div className="alert alert-danger">{error}</div>}
-          {mensaje && <div className="alert alert-success">{mensaje}</div>}
+            {error && <div className="alert alert-danger">{error}</div>}
+            {mensaje && <div className="alert alert-success">{mensaje}</div>}
 
-          {!proveedorCargado && (
-          <form
-            onSubmit={cargarProveedor}
-            className="w-100"
-            style={{ maxWidth: '900px', margin: '0 auto' }}
-          >
-            <div className="mb-4 row align-items-center">
-              <label
-                className="col-md-4 col-form-label fw-semibold"
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                RTN del proveedor:
-              </label>
-              <div className="col-md-8">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={rtnActual}
-                  onChange={(e) => setRtnActual(e.target.value)}
-                  required
-                  style={{ minWidth: '0' }}
-                />
+            {!proveedorCargado && (
+            <form
+              onSubmit={cargarProveedor}
+              className="w-100"
+              style={{ maxWidth: '900px', margin: '0 auto' }}
+            >
+              <div className="mb-4 row align-items-center">
+                <label
+                  className="col-md-4 col-form-label fw-semibold"
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  RTN del proveedor:
+                </label>
+                <div className="col-md-8">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={rtnActual}
+                    onChange={(e) => setRtnActual(e.target.value)}
+                    required
+                    style={{ minWidth: '0' }}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="d-flex justify-content-between mt-3">
-              <Link to="/proveedores" className="btn btn-secondary">
-                Regresar
-              </Link>
-              <button type="submit" className="btn btn-primary">
-                Cargar proveedor
-              </button>
-            </div>
-          </form>
-        )}
-
-
-          {proveedorCargado && (
-            <form onSubmit={guardarCambios}>
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Nombre</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={nombreX}
-                    onChange={(e) => setNombre(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Correo</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    value={correo}
-                    onChange={(e) => setCorreo(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="col-md-12">
-                  <label className="form-label fw-semibold">Dirección</label>
-                  <textarea
-                    className="form-control"
-                    rows="2"
-                    value={direccion}
-                    onChange={(e) => setDireccion(e.target.value)}
-                    required
-                  ></textarea>
-                </div>
-
-                <div className="col-md-5">
-                  <label className="form-label fw-semibold">RTN</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={rtnNuevo}
-                    onChange={(e) => setRtnNuevo(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold">País</label>
-                  <select
-                    className="form-select"
-                    value={pais}
-                    onChange={(e) => setPais(e.target.value)}
-                  >
-                    {allCountries.map(({ name, iso2, dialCode }) => (
-                      <option key={iso2} value={iso2.toUpperCase()}>
-                        {name} (+{dialCode})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="col-md-3">
-                  <label className="form-label fw-semibold">Teléfono</label>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Encargado de Registro</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={encargadoRegistro}
-                    readOnly
-                  />
-                </div>
-
-                <div className="col-md-6">
-                  <label className="form-label fw-semibold">Fecha de Registro</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={fechaRegistrado}
-                    readOnly
-                  />
-                </div>
-
-              </div>
-
-              <div className="d-flex justify-content-between mt-4">
-                <Link to="/proveedores" className="btn btn-secondary">Regresar</Link>
-                <button type="submit" className="btn btn-success">Guardar Cambios</button>
+              <div className="d-flex justify-content-between mt-3">
+                <Link to="/proveedores" className="btn btn-secondary">
+                  Regresar
+                </Link>
+                <button type="submit" className="btn btn-primary">
+                  Cargar proveedor
+                </button>
               </div>
             </form>
           )}
+
+
+            {proveedorCargado && (
+              <form onSubmit={guardarCambios}>         	  
+              
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Nombre</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={nombreX}
+                      onChange={(e) => setNombre(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Correo</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      value={correo}
+                      onChange={(e) => setCorreo(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-12">
+                    <label className="form-label fw-semibold">Dirección</label>
+                    <textarea
+                      className="form-control"
+                      rows="2"
+                      value={direccion}
+                      onChange={(e) => setDireccion(e.target.value)}
+                      required
+                    ></textarea>
+                  </div>
+
+                  <div className="col-md-5">
+                    <label className="form-label fw-semibold">RTN</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={rtnNuevo}
+                      onChange={(e) => setRtnNuevo(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label fw-semibold">País</label>
+                    <select
+                      className="form-select"
+                      value={pais}
+                      onChange={(e) => setPais(e.target.value)}
+                    >
+                      {allCountries.map(({ name, iso2, dialCode }) => (
+                        <option key={iso2} value={iso2.toUpperCase()}>
+                          {name} (+{dialCode})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label fw-semibold">Teléfono</label>
+                    <input
+                      type="tel"
+                      className="form-control"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Encargado de Registro</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={encargadoRegistro}
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Fecha de Registro</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={fechaRegistrado}
+                      readOnly
+                    />
+                  </div>
+
+                </div>
+
+                <div className="d-flex justify-content-between mt-4">
+                  <Link to="/proveedores" className="btn btn-secondary">Regresar</Link>
+                  <button type="submit" className="btn btn-success">Guardar Cambios</button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
+      {/* Scroll personalizado */}
+      <style>{`
+        .scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .scroll-container::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 12px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb {
+          background-color: #e2f1ff;
+          border-radius: 12px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+          background-color: #084298;
+        }
+      `}</style>
     </>
   );
 }
