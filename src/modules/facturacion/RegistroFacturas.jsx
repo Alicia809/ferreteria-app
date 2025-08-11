@@ -133,7 +133,6 @@ export default function RegistroFacturas() {
                 <th>Tipo ID</th>
                 <th>Usuario Encargado</th>
                 <th>Subtotal</th>
-                <th>ISV</th>
                 <th>Total</th>
                 <th>Productos</th>
                 <th>Descuentos</th> {/* NUEVA COLUMNA */}
@@ -150,7 +149,6 @@ export default function RegistroFacturas() {
                     <td>{factura.tipoIdent}</td>
                     <td>{factura.usuarioEncargado}</td>
                     <td>L {parseFloat(factura.subtotalFactura || 0).toFixed(2)}</td>
-                    <td>L {parseFloat(factura.impuestos?.isv || 0).toFixed(2)}</td>
                     <td>L {parseFloat(factura.total || 0).toFixed(2)}</td>
                     <td>
                       {factura.productos?.map((p, i) => (

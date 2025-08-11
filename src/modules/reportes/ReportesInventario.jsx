@@ -60,6 +60,15 @@ export default function ReportesInventario() {
   if (loading) return <ReportLayout title="Reportes de Inventario"><div className="spinner-border" /> Cargando…</ReportLayout>;
 
   return (
+    <div className="scroll-container"
+      style={{
+        maxHeight: '100vh',
+        overflowY: 'auto',
+        padding: '2.5rem',
+        maxWidth: '1200px',
+        width: '100%',
+      }}
+    >
     <ReportLayout
       title="Reportes de Inventario"
       subtitle={`Valor del inventario: ${fmtMoney(valorInventario)} · Productos en bajo stock: ${fmtNum(bajoStock.length)}`}
@@ -216,5 +225,23 @@ export default function ReportesInventario() {
         </div>
       </div>
     </ReportLayout>
+    {/* Scroll personalizado */}
+    <style>{`
+      .scroll-container::-webkit-scrollbar {
+        width: 8px;
+      }
+      .scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 12px;
+      }
+      .scroll-container::-webkit-scrollbar-thumb {
+        background-color: #e2f1ff;
+        border-radius: 12px;
+      }
+      .scroll-container::-webkit-scrollbar-thumb:hover {
+        background-color: #084298;
+      }
+    `}</style>
+    </div>
   );
 }

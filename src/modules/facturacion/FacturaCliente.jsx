@@ -622,139 +622,148 @@ export default function FacturaCliente() {
           </div>
         </div>
       </nav>
+      <div className="scroll-container"
+        style={{
+          maxHeight: '100vh',
+          overflowY: 'auto',
+          padding: '2.5rem',
+          maxWidth: '1200px',
+          width: '100%',
+        }}
+      >
+        <Container style={{ marginTop: '90px' }}>        
+          <Card>
+            {mostrarAlerta && numerosRestantes !== null && (
+              <div className="alert alert-warning" role="alert">
+                Quedan <strong>{numerosRestantes}</strong> números disponibles para llegar al límite de la resolución CAI.
+              </div>
+            )}
+            <Card.Body>
+              <Row className="border-bottom mb-3 pb-3">
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Fecha y hora</Form.Label>
+                    <Form.Control type="datetime-local" value={fechaHoraHonduras} disabled />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group>
+                    <Form.Label>Número de factura</Form.Label>
+                    <Form.Control value={numeroFactura} disabled />
+                  </Form.Group>
+                </Col>
+                <Col md={4}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>ID Registro</Form.Label>
+                    <Form.Control type="text" value={idRegistro} disabled />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Tipo Identificación</Form.Label>
+                    <Form.Select value={formData.tipoIdent} onChange={e => setFormData({ ...formData, tipoIdent: e.target.value })}>
+                      <option value="">-- Seleccionar --</option>
+                      <option value="RTN">RTN</option>
+                      <option value="DNI">DNI</option>
+                      <option value="PASAPORTE">Pasaporte</option>
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Número de Identificación</Form.Label>
+                    <Form.Control
+                      isInvalid={errores.identificacion}
+                      value={formData.identificacion}
+                      onChange={e => setFormData({ ...formData, identificacion: e.target.value })}
+                      onBlur={validarIdentificacion}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errores.identificacion}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
+              </Row>
 
-      <Container style={{ marginTop: '90px' }}>        
-        <Card>
-          {mostrarAlerta && numerosRestantes !== null && (
-            <div className="alert alert-warning" role="alert">
-              Quedan <strong>{numerosRestantes}</strong> números disponibles para llegar al límite de la resolución CAI.
-            </div>
-          )}
-          <Card.Body>
-            <Row className="border-bottom mb-3 pb-3">
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Fecha y hora</Form.Label>
-                  <Form.Control type="datetime-local" value={fechaHoraHonduras} disabled />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Número de factura</Form.Label>
-                  <Form.Control value={numeroFactura} disabled />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>ID Registro</Form.Label>
-                  <Form.Control type="text" value={idRegistro} disabled />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Tipo Identificación</Form.Label>
-                  <Form.Select value={formData.tipoIdent} onChange={e => setFormData({ ...formData, tipoIdent: e.target.value })}>
-                    <option value="">-- Seleccionar --</option>
-                    <option value="RTN">RTN</option>
-                    <option value="DNI">DNI</option>
-                    <option value="PASAPORTE">Pasaporte</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Número de Identificación</Form.Label>
-                  <Form.Control
-                    isInvalid={errores.identificacion}
-                    value={formData.identificacion}
-                    onChange={e => setFormData({ ...formData, identificacion: e.target.value })}
-                    onBlur={validarIdentificacion}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errores.identificacion}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-            </Row>
+              <Row className="mb-3">
+                <Col className="text-end">
+                  <Button variant="primary" className="me-2" onClick={() => setProductoModal(true)}>
+                    <FaPlus /> Añadir producto
+                  </Button>
+                  <Button variant="info" onClick={() => setDescuentoModal(true)}>
+                    <FaPlus /> Añadir descuento/impuesto
+                  </Button>
+                </Col>
+              </Row>
 
-            <Row className="mb-3">
-              <Col className="text-end">
-                <Button variant="primary" className="me-2" onClick={() => setProductoModal(true)}>
-                  <FaPlus /> Añadir producto
-                </Button>
-                <Button variant="info" onClick={() => setDescuentoModal(true)}>
-                  <FaPlus /> Añadir descuento/impuesto
-                </Button>
-              </Col>
-            </Row>
-
-            <Table bordered>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Producto</th>
-                  <th>Cantidad</th>
-                  <th>Precio Unitario</th>
-                  <th>Monto</th>
-                  <th>Acciones</th> {/* Nueva columna */}
-                </tr>
-              </thead>
-              <tbody>
-                {facturaProductos.map((prod, i) => (
-                  <tr key={i}>
-                    <td>{prod.id}</td>
-                    <td>{prod.nombre}</td>
-                    <td>{prod.cantidad}</td>
-                    <td>{prod.precio}</td>
-                    <td>{prod.monto.toFixed(2)}</td>
-                    <td>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleEliminarProducto(i)}
-                        title="Eliminar producto"
-                      >
-                        <FaTrash />
-                      </Button>
-                    </td>
+              <Table bordered>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Monto</th>
+                    <th>Acciones</th> {/* Nueva columna */}
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {facturaProductos.map((prod, i) => (
+                    <tr key={i}>
+                      <td>{prod.id}</td>
+                      <td>{prod.nombre}</td>
+                      <td>{prod.cantidad}</td>
+                      <td>{prod.precio}</td>
+                      <td>{prod.monto.toFixed(2)}</td>
+                      <td>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleEliminarProducto(i)}
+                          title="Eliminar producto"
+                        >
+                          <FaTrash />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
 
-            <Row className="text-end">
-              <Col md={{ span: 4, offset: 8 }}>
-                <p>Subtotal: L. {calcularSubtotal()}</p>
-                {descuentosSeleccionados.map((desc, i) => (
-                  <p key={i}>
-                    {desc.nombreY} ({desc.porcentaje}%): -L. {desc.monto.toFixed(2)}
-                  </p>
-                ))}
-                {impuestosSeleccionados.map((imp, i) => (
-                  <p key={i}>
-                    {imp.nombreY} ({imp.porcentaje}%): +L. {imp.monto.toFixed(2)}
-                  </p>
-                ))}
-                <p>ISV (15%): L. {calcularImpuesto()}</p>
-                <h5>Total: L. {calcularTotal()}</h5>
-              </Col>
-            </Row>
+              <Row className="text-end">
+                <Col md={{ span: 4, offset: 8 }}>
+                  <p>Subtotal: L. {calcularSubtotal()}</p>
+                  {descuentosSeleccionados.map((desc, i) => (
+                    <p key={i}>
+                      {desc.nombreY} ({desc.porcentaje}%): -L. {desc.monto.toFixed(2)}
+                    </p>
+                  ))}
+                  {impuestosSeleccionados.map((imp, i) => (
+                    <p key={i}>
+                      {imp.nombreY} ({imp.porcentaje}%): +L. {imp.monto.toFixed(2)}
+                    </p>
+                  ))}
+                  <p>ISV (15%): L. {calcularImpuesto()}</p>
+                  <h5>Total: L. {calcularTotal()}</h5>
+                </Col>
+              </Row>
 
-            <Row className="text-end">
-              <Col>
-                <Button
-                  variant="secondary"
-                  className="me-2"
-                  onClick={() => navigate('/facturacion')}
-                >
-                  Cancelar
-                </Button>
-                <Button variant="success" onClick={handleGuardarEImprimir}>Guardar e Imprimir</Button>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-      </Container>
+              <Row className="text-end">
+                <Col>
+                  <Button
+                    variant="secondary"
+                    className="me-2"
+                    onClick={() => navigate('/facturacion')}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button variant="success" onClick={handleGuardarEImprimir}>Guardar e Imprimir</Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Container>
+      </div>
       <Modal show={productoModal} onHide={() => setProductoModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Agregar Producto</Modal.Title>
@@ -1054,6 +1063,23 @@ export default function FacturaCliente() {
           <p style={{ margin: 0 }}>Total de unidades facturadas: {facturaProductos.reduce((sum, p) => sum + p.cantidad, 0)}</p>
         </div>
       </div>
+      {/* Scroll personalizado */}
+      <style>{`
+        .scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .scroll-container::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 12px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb {
+          background-color: #e2f1ff;
+          border-radius: 12px;
+        }
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+          background-color: #084298;
+        }
+      `}</style>
     </div>
   );
 }

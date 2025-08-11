@@ -107,6 +107,15 @@ export default function ReportesVentas() {
   }
 
   return (
+    <div className="scroll-container"
+      style={{
+        maxHeight: '100vh',
+        overflowY: 'auto',
+        padding: '2.5rem',
+        maxWidth: '1200px',
+        width: '100%',
+      }}
+    >
     <ReportLayout
       title="Reportes de Ventas"
       subtitle={`Ingresos 12M: ${fmtMoney(totalIngresos)} · Costos: ${fmtMoney(totalCostos)} · Margen: ${fmtMoney(margen)} · Ticket prom.: ${fmtMoney(ticketProm)}`}
@@ -249,8 +258,25 @@ export default function ReportesVentas() {
             </div>
           </div>
         </div>
-
       </div>
     </ReportLayout>
+    {/* Scroll personalizado */}
+    <style>{`
+      .scroll-container::-webkit-scrollbar {
+        width: 8px;
+      }
+      .scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 12px;
+      }
+      .scroll-container::-webkit-scrollbar-thumb {
+        background-color: #e2f1ff;
+        border-radius: 12px;
+      }
+      .scroll-container::-webkit-scrollbar-thumb:hover {
+        background-color: #084298;
+      }
+    `}</style>
+    </div>
   );
 }

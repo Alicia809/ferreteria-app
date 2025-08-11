@@ -79,6 +79,15 @@ export default function ReportesCompras() {
   if (loading) return <ReportLayout title="Reportes de Compras"><div className="spinner-border" /> Cargando…</ReportLayout>;
 
   return (
+  <div className="scroll-container"
+      style={{
+        maxHeight: '100vh',
+        overflowY: 'auto',
+        padding: '2.5rem',
+        maxWidth: '1200px',
+        width: '100%',
+      }}
+    >
     <ReportLayout
       title="Reportes de Compras"
       subtitle={`Unidades reabastecidas (12 meses): ${fmtNum(totalUnidades)} · Proveedores con movimiento: ${fmtNum(topProveedores.length)}`}
@@ -224,7 +233,25 @@ export default function ReportesCompras() {
         </div>
       </div>
     </ReportLayout>
-  );
-
+    {/* Scroll personalizado */}
+    <style>{`
+      .scroll-container::-webkit-scrollbar {
+        width: 8px;
+      }
+      .scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 12px;
+      }
+      .scroll-container::-webkit-scrollbar-thumb {
+        background-color: #e2f1ff;
+        border-radius: 12px;
+      }
+      .scroll-container::-webkit-scrollbar-thumb:hover {
+        background-color: #084298;
+      }
+    `}</style>
+  </div>
   
+  );
+ 
 }

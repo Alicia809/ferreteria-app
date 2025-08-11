@@ -82,7 +82,15 @@ export default function ActualizacionManual() {
       </nav>
 
       {/* TARJETAS */}
-      <div className="container py-5" style={{ paddingTop: '90px' }}>
+      <div className="scroll-container"
+        style={{
+          maxHeight: '100vh',
+          overflowY: 'auto',
+          padding: '5rem',
+          maxWidth: '1200px',
+          width: '100%',
+        }}
+      >
         <h2 className="text-center mb-4 text-primary fw-bold">
           <i className="bi bi-pencil-square me-2"></i> Actualización Manual de Inventario
         </h2>
@@ -142,6 +150,22 @@ export default function ActualizacionManual() {
             <i className="bi bi-arrow-left me-2"></i> Volver a Inventario
           </button>
         </div>
+        <style>{`
+          .scroll-container::-webkit-scrollbar {
+            width: 8px;
+          }
+          .scroll-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 12px;
+          }
+          .scroll-container::-webkit-scrollbar-thumb {
+            background-color: #e2f1ff;
+            border-radius: 12px;
+          }
+          .scroll-container::-webkit-scrollbar-thumb:hover {
+            background-color: #084298;
+          }
+        `}</style>
       </div>
     </>
   );
